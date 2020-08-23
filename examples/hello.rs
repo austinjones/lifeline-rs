@@ -101,7 +101,7 @@ mod bus {
     //   and implements DynBus for it.
     // DynBus stores the channels in Box<dyn Any> slots,
     //  and deals with all the dyn trait magic for us.
-    lifeline_bus!(pub ExampleBus);
+    lifeline_bus!(pub struct ExampleBus);
 
     // This binds the message ExampleRecv to the bus.
     // We have to specify the channel sender!
