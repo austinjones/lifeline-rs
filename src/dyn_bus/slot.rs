@@ -4,7 +4,6 @@ use crate::{
     Bus, Channel, Storage,
 };
 
-use log::debug;
 use std::{
     any::{Any, TypeId},
     collections::{HashMap, HashSet},

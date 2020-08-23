@@ -1,13 +1,13 @@
 use crate::{
     bus::{Link, Message, Resource},
     error::{type_name, AlreadyLinkedError, TakeChannelError, TakeResourceError},
-    Bus, Channel, Storage,
+    Bus, Channel,
 };
 
-use super::{slot::BusSlot, DynBus};
+use super::slot::BusSlot;
 use log::debug;
 use std::{
-    any::{Any, TypeId},
+    any::TypeId,
     collections::{HashMap, HashSet},
     fmt::Debug,
     marker::PhantomData,
