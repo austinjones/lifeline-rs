@@ -16,7 +16,7 @@ But if the channel is `!Clone`, future calls will get an `Err`.  The Rx/Tx type 
 if you attempt to take a channel for an message type which the bus does not carry.
 
 ```rust
-lifeline_bus!(pub MainBus);
+lifeline_bus!(pub struct MainBus);
 
 let rx = bus.rx::<MessageType>()?;
 ```
@@ -34,7 +34,7 @@ use myapp::message::MainSend;
 use myapp::message::MainRecv;
 use tokio::sync::mpsc;
 
-lifeline_bus!(pub MainBus);
+lifeline_bus!(pub struct MainBus);
 
 impl Message<MainBus> for MainSend {
     type Channel = mpsc::Sender<Self>;
@@ -57,6 +57,19 @@ fn use_bus() -> anyhow::Result<()> {
 The bus should be short-lived in the lifecycle of your application (i.e. drop it once your Main service has spawned).
 This provides you with accurate 'channel disconnected' errors.
 
+### A note about autocomplete
+`rust-analyzer` does not currently support auto-import for structs defined in macros.  Lifeline really needs the
+struct defined in the macro, as it injects magic fields which store the channels at runtime.
+
+There is a workaround: define a `prelude.rs` file in your crate root that exports `pub use` for all your bus implementations.  
+```
+pub use lifeline::*;
+pub use crate::bus::MainBus;
+pub use crate::other::OtherBus;
+...
+```
+Then in all your modules:
+`use crate::prelude::*`
 
 ## The Carrier
 Carriers provide a way to move messages between busses.  Carriers can translate, ignore, or collect information,
