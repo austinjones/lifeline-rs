@@ -12,8 +12,6 @@ use crate::error::type_name;
 use log::debug;
 use pin_project::pin_project;
 
-// TODO: allow Result from the spawn
-
 /// Executes the task, until the future completes, or the lifeline is dropped
 pub(crate) fn spawn_task<O>(name: String, fut: impl Future<Output = O> + Send + 'static) -> Lifeline
 where
@@ -21,7 +19,7 @@ where
 {
     let inner = Arc::new(LifelineInner::new());
 
-    let service = ServiceFuture::new(name, fut, inner.clone());
+    let service = LifelineFuture::new(name, fut, inner.clone());
     spawn_task_inner(service);
 
     Lifeline::new(inner)
@@ -30,32 +28,6 @@ where
 pub(crate) fn task_name<S>(name: &str) -> String {
     type_name::<S>().to_string() + "/" + name
 }
-
-// pub fn spawn_from_stream<T, S, F, Fut>(mut stream: S, mut f: F) -> Lifeline
-// where
-//     S: Stream<Item = T> + Send + Unpin + 'static,
-//     F: FnMut(T) -> Fut + Send + Sync + 'static,
-//     T: Send,
-//     Fut: Future + Send,
-// {
-//     let future = async move {
-//         while let Some(msg) = stream.next().await {
-//             f(msg).await;
-//         }
-//     };
-
-//     spawn(future)
-// }
-
-// pub fn spawn_from<State, Output, Fut, F>(state: State, function: F) -> Lifeline
-// where
-//     Output: Send + 'static,
-//     Fut: Future<Output = Output> + Send + 'static,
-//     F: FnOnce(State) -> Fut,
-// {
-//     let future = function(state);
-//     spawn(future)
-// }
 
 // #[cfg(feature = "tokio-executor")]
 fn spawn_task_inner<F, O>(task: F)
@@ -67,14 +39,14 @@ where
 }
 
 #[pin_project]
-struct ServiceFuture<F: Future> {
+struct LifelineFuture<F: Future> {
     #[pin]
     future: F,
     name: String,
     inner: Arc<LifelineInner>,
 }
 
-impl<F: Future + Send> ServiceFuture<F> {
+impl<F: Future + Send> LifelineFuture<F> {
     pub fn new(name: String, future: F, inner: Arc<LifelineInner>) -> Self {
         debug!("START {}", &name);
 
@@ -86,7 +58,7 @@ impl<F: Future + Send> ServiceFuture<F> {
     }
 }
 
-impl<F: Future> Future for ServiceFuture<F>
+impl<F: Future> Future for LifelineFuture<F>
 where
     F::Output: Debug,
 {
