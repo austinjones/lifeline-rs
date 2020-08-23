@@ -1,11 +1,11 @@
 #[macro_export]
 macro_rules! lifeline_bus (
             // match one or more generics separated by a comma
-    ($name:ident $(< $( $gen:ident ),+ >)? ) => {
-        lifeline_bus! { () struct $name $(< $( $gen ),+ >)? }
+    (struct $name:ident $(< $( $gen:ident ),+ >)? ) => {
+        lifeline_bus! { () struct $name $(< $( $gen ),+ >)?; }
     };
 
-    (pub $name:ident $(< $( $gen:ident ),+ >)* ) => {
+    (pub struct $name:ident $(< $( $gen:ident ),+ >)* ) => {
         lifeline_bus! { (pub) struct $name $(< $( $gen ),+ >)* }
     };
 

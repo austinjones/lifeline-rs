@@ -97,7 +97,7 @@ mod bus {
     use lifeline::{lifeline_bus, Bus, FromCarrier, Lifeline, Message};
     use tokio::sync::mpsc;
 
-    lifeline_bus!(pub MainBus);
+    lifeline_bus!(pub struct MainBus);
 
     // This binds the message ExampleRecv to the bus.
     // We have to specify the channel sender!
@@ -106,7 +106,7 @@ mod bus {
         type Channel = mpsc::Sender<Self>;
     }
 
-    lifeline_bus!(pub SubsurfaceBus);
+    lifeline_bus!(pub struct SubsurfaceBus);
 
     impl Message<SubsurfaceBus> for SubsurfaceSend {
         type Channel = mpsc::Sender<Self>;

@@ -10,7 +10,7 @@ pub fn block_on<Fut: Future<Output = Out>, Out>(fut: Fut) -> Out {
 
 /// forked from https://github.com/tokio-rs/tokio/pull/2522/files
 /// thank you https://github.com/RadicalZephyr !!
-/// this was just what I needed
+/// this was just what Lifeline needs.
 
 /// Asserts that the expression completes within a given number of milliseconds.
 ///
