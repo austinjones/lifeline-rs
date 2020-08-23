@@ -1,4 +1,4 @@
-# Lifeline
+# lifeline-rs
 Lifeline is a dependency injection library for message-based applications.
 
 Lifeline provides:
