@@ -41,13 +41,13 @@ pub async fn main() -> anyhow::Result<()> {
 
     let oh_hello = rx.recv().await;
     assert_eq!(Some(SubsurfaceRecv::OhHello), oh_hello);
+    println!("Subsurface says {:?}", oh_hello.unwrap());
 
     // the other messages we sent (Hello + Goodbye) weren't forwarded
     delay_for(Duration::from_millis(200)).await;
     let next_msg = rx.try_recv();
     assert_eq!(Err(TryRecvError::Empty), next_msg);
-
-    println!("Subsurface says {:?}", oh_hello.unwrap());
+    println!("No other messages.",);
 
     println!("All done.");
 

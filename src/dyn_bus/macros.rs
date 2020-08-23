@@ -93,18 +93,18 @@ macro_rules! lifeline_bus (
             //     self.storage.take_channel::<Msg, Source, Self, <Msg as $crate::Message<Self>>::Channel>(other, false, true)
             // }
 
-            fn take_resource<Res, Source>(
-                &self,
-                other: &Source,
-            ) -> Result<(), $crate::error::TakeResourceError>
-            where
-                Res: $crate::Storage,
-                Res: $crate::Resource<Source>,
-                Res: $crate::Resource<Self>,
-                Source: $crate::dyn_bus::DynBus
-            {
-                self.storage.take_resource::<Res, Source, Self>(other)
-            }
+            // fn take_resource<Res, Source>(
+            //     &self,
+            //     other: &Source,
+            // ) -> Result<(), $crate::error::TakeResourceError>
+            // where
+            //     Res: $crate::Storage,
+            //     Res: $crate::Resource<Source>,
+            //     Res: $crate::Resource<Self>,
+            //     Source: $crate::dyn_bus::DynBus
+            // {
+            //     self.storage.take_resource::<Res, Source, Self>(other)
+            // }
 
             fn storage(&self) -> &$crate::dyn_bus::DynBusStorage<Self> {
                 &self.storage

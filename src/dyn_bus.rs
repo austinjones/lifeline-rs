@@ -55,12 +55,12 @@ pub trait DynBus: Bus {
     //     Msg: Message<Source, Channel = <Msg as Message<Self>>::Channel>,
     //     Source: DynBus;
 
-    fn take_resource<Res, Source>(&self, other: &Source) -> Result<(), TakeResourceError>
-    where
-        Res: Storage,
-        Res: Resource<Source>,
-        Res: Resource<Self>,
-        Source: DynBus;
+    // fn take_resource<Res, Source>(&self, other: &Source) -> Result<(), TakeResourceError>
+    // where
+    //     Res: Storage,
+    //     Res: Resource<Source>,
+    //     Res: Resource<Self>,
+    //     Source: DynBus;
 
     fn storage(&self) -> &DynBusStorage<Self>;
 }

@@ -287,38 +287,38 @@ impl<B: Bus> DynBusStorage<B> {
     //     Ok(())
     // }
 
-    pub fn take_resource<Res, Source, Target>(
-        &self,
-        other: &Source,
-    ) -> Result<(), TakeResourceError>
-    where
-        Res: Resource<Source>,
-        Res: Resource<Target>,
-        Res: Storage,
-        Source: DynBus,
-    {
-        let id = TypeId::of::<Res>();
+    // pub fn take_resource<Res, Source, Target>(
+    //     &self,
+    //     other: &Source,
+    // ) -> Result<(), TakeResourceError>
+    // where
+    //     Res: Resource<Source>,
+    //     Res: Resource<Target>,
+    //     Res: Storage,
+    //     Source: DynBus,
+    // {
+    //     let id = TypeId::of::<Res>();
 
-        let mut target = self.state.write().expect("cannot lock other");
-        if target.resources.contains_key(&id) {
-            return Err(TakeResourceError::taken::<Source, Res>());
-        }
+    //     let mut target = self.state.write().expect("cannot lock other");
+    //     if target.resources.contains_key(&id) {
+    //         return Err(TakeResourceError::taken::<Source, Res>());
+    //     }
 
-        let source = other.storage();
+    //     let source = other.storage();
 
-        let res = source.clone_resource::<Res>()?;
-        drop(source);
+    //     let res = source.clone_resource::<Res>()?;
+    //     drop(source);
 
-        debug!(
-            "Resource {} moved: {} => {}",
-            type_name::<Res>(),
-            type_name::<Source>(),
-            type_name::<Target>()
-        );
-        target.resources.insert(id.clone(), BusSlot::new(Some(res)));
+    //     debug!(
+    //         "Resource {} moved: {} => {}",
+    //         type_name::<Res>(),
+    //         type_name::<Source>(),
+    //         type_name::<Target>()
+    //     );
+    //     target.resources.insert(id.clone(), BusSlot::new(Some(res)));
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn capacity<Msg>(&self, capacity: usize) -> Result<(), AlreadyLinkedError>
     where

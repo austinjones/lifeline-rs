@@ -6,7 +6,6 @@ pub mod request;
 mod service;
 mod spawn;
 pub mod storage;
-mod type_name;
 
 // TODO: try to get this as cfg(test)
 pub mod test;
