@@ -17,6 +17,7 @@ pub trait Resource<Bus>: Storage + Debug + Send {}
 // pub trait Stores<Type> {}
 // impl<B, R> Stores<R> for B where R: Resource<B> {}
 
+/// The bus carries
 pub trait Bus: Default + Debug + Sized {
     /// Returns the receiver on the first call, and
 

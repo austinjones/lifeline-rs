@@ -142,7 +142,7 @@ mod bus {
     use lifeline::{lifeline_bus, Message};
     use tokio::sync::{broadcast, mpsc, watch};
 
-    lifeline_bus!(pub StateBus);
+    lifeline_bus!(pub struct StateBus);
 
     // we bind a watch sender here.
     // watch senders store the latest value,

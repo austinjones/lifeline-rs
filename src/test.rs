@@ -10,7 +10,7 @@ pub fn block_on<Fut: Future<Output = Out>, Out>(fut: Fut) -> Out {
 
 /// forked from https://github.com/tokio-rs/tokio/pull/2522/files
 /// thank you https://github.com/RadicalZephyr !!
-/// this was just what I needed
+/// this was just what Lifeline needs.
 
 /// Asserts that the expression completes within a given number of milliseconds.
 ///
@@ -24,7 +24,7 @@ pub fn block_on<Fut: Future<Output = Out>, Out>(fut: Fut) -> Out {
 /// # Examples
 ///
 /// ```rust
-/// use tab_service_test::assert_completes;
+/// use lifeline::assert_completes;
 /// use tokio::time::delay_for;
 ///
 /// # let fut =
@@ -38,7 +38,7 @@ pub fn block_on<Fut: Future<Output = Out>, Out>(fut: Fut) -> Out {
 ///```
 ///
 /// ```rust,should_panic
-/// use tab_service_test::assert_completes;
+/// use lifeline::assert_completes;
 /// use tokio::time::delay_for;
 ///
 /// # let fut =
@@ -81,7 +81,7 @@ macro_rules! assert_completes {
 /// # Examples
 ///
 /// ```rust,should_panic
-/// use tab_service_test::assert_times_out;
+/// use lifeline::assert_times_out;
 /// use tokio::time::delay_for;
 ///
 /// # let fut =
@@ -95,7 +95,7 @@ macro_rules! assert_completes {
 /// ```
 ///
 /// ```rust
-/// use tab_service_test::assert_times_out;
+/// use lifeline::assert_times_out;
 /// use tokio::time::delay_for;
 ///
 /// # let fut =

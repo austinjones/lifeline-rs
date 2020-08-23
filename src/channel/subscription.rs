@@ -42,7 +42,9 @@ mod bus {
     use std::{fmt::Debug, hash::Hash};
     use tokio::sync::{mpsc, watch};
 
-    lifeline_bus!(pub SubscriptionBus<T>);
+    lifeline_bus!(
+        pub struct SubscriptionBus<T>
+    );
 
     impl<T> Message<SubscriptionBus<T>> for super::messages::Subscription<T>
     where
