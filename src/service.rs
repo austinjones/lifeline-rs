@@ -41,6 +41,19 @@ pub trait IntoCarrier<IntoBus: Bus>: Bus + Task + Sized {
     fn carry_into(&self, into: &IntoBus) -> Self::Lifeline;
 }
 
+impl<F, I> IntoCarrier<I> for F
+where
+    I: FromCarrier<F>,
+    F: Bus,
+    I: Bus,
+{
+    type Lifeline = <I as FromCarrier<F>>::Lifeline;
+
+    fn carry_into(&self, into: &I) -> Self::Lifeline {
+        into.carry_from(self)
+    }
+}
+
 pub trait DefaultCarrier<FromBus: Bus>: FromCarrier<FromBus> {
     fn carry_default() -> (Self, FromBus, Self::Lifeline) {
         let into = Self::default();
