@@ -1,5 +1,6 @@
 [package]
 name = "lifeline"
+description = "Lifeline is a dependency injection library for message-based applications."
 version = "0.1.0"
 authors = ["Austin Jones <austinbaysjones@gmail.com>"]
 edition = "2018"
