@@ -135,6 +135,13 @@ mod channel {
         }
     }
 
+    impl<T: Hash + Eq + Clone> Receiver<T> {
+        fn iter(&self) -> impl Iterator<Item = T> {
+            let items = self.rx.borrow().subscriptions.clone();
+            items.into_iter().map(|(k, _v)| k)
+        }
+    }
+
     impl<T> Clone for Receiver<T> {
         fn clone(&self) -> Self {
             Self {
