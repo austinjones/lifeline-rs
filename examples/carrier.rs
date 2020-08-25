@@ -2,8 +2,6 @@ use bus::{MainBus, SubsurfaceBus};
 use lifeline::prelude::*;
 use message::{main::MainSend, subsurface::SubsurfaceSend};
 use service::HelloService;
-use std::time::Duration;
-use tokio::{sync::mpsc::error::TryRecvError, time::delay_for};
 
 /// This examples shows how to communicate between Bus instances using the CarryFrom trait
 /// When your application gets large, eventually you need to spawn new tasks as runtime (when a connection arrives)

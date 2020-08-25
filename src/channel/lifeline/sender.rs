@@ -1,9 +1,8 @@
 use super::{SendError, Sender};
 use async_trait::async_trait;
 use log::trace;
-use pin_project::pin_project;
+
 use std::{fmt::Debug, marker::PhantomData};
-use thiserror::Error;
 
 pub struct LifelineSender<T, S> {
     inner: S,

@@ -1,6 +1,6 @@
 use super::Receiver;
 use async_trait::async_trait;
-use log::{trace, warn};
+
 use pin_project::pin_project;
 use std::{
     fmt::Debug,

@@ -3,10 +3,10 @@ mod slot;
 mod storage;
 
 use crate::{
-    bus::{Link, Message, Resource},
+    bus::{Message, Resource},
     channel::lifeline::{receiver::LifelineReceiver, sender::LifelineSender},
-    error::{type_name, AlreadyLinkedError, TakeChannelError, TakeResourceError},
-    Bus, Channel, Storage,
+    error::{AlreadyLinkedError, TakeChannelError, TakeResourceError},
+    Bus, Channel,
 };
 
 pub use storage::DynBusStorage;
