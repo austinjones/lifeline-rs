@@ -26,9 +26,9 @@ where
             .rx::<messages::SubscriptionState<T>>()
             .expect("rx SubscriptionState<T>");
 
-        let sender = channel::Sender::new(tx, service);
+        let sender = channel::Sender::new(tx.into_inner(), service);
 
-        let receiver = channel::Receiver::new(rx);
+        let receiver = channel::Receiver::new(rx.into_inner());
         (sender, receiver)
     }
 
@@ -207,8 +207,8 @@ mod service {
         type Lifeline = anyhow::Result<Lifeline>;
 
         fn spawn(bus: &Self::Bus) -> Self::Lifeline {
-            let mut rx = bus.rx::<Subscription<T>>()?;
-            let tx = bus.tx::<SubscriptionState<T>>()?;
+            let mut rx = bus.rx::<Subscription<T>>()?.into_inner();
+            let tx = bus.tx::<SubscriptionState<T>>()?.into_inner();
             let mut next_id = 0usize;
             let lifeline = Self::try_task("run", async move {
                 let mut state = SubscriptionState::default();

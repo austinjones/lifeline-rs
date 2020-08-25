@@ -4,6 +4,7 @@ mod storage;
 
 use crate::{
     bus::{Link, Message, Resource},
+    channel::lifeline::{receiver::LifelineReceiver, sender::LifelineSender},
     error::{type_name, AlreadyLinkedError, TakeChannelError, TakeResourceError},
     Bus, Channel, Storage,
 };
@@ -61,20 +62,26 @@ impl<T> Bus for T
 where
     T: DynBus,
 {
-    fn rx<Msg>(&self) -> Result<<Msg::Channel as Channel>::Rx, TakeChannelError>
+    fn rx<Msg>(
+        &self,
+    ) -> Result<LifelineReceiver<Msg, <Msg::Channel as Channel>::Rx>, TakeChannelError>
     where
         Msg: crate::bus::Message<Self> + 'static,
     {
         self.storage().link_channel::<Msg, Self>();
-        self.storage().clone_rx::<Msg, Self>()
+        let rx = self.storage().clone_rx::<Msg, Self>()?;
+        Ok(LifelineReceiver::new(rx))
     }
 
-    fn tx<Msg>(&self) -> Result<<Msg::Channel as Channel>::Tx, TakeChannelError>
+    fn tx<Msg>(
+        &self,
+    ) -> Result<LifelineSender<Msg, <Msg::Channel as Channel>::Tx>, TakeChannelError>
     where
         Msg: crate::bus::Message<Self> + 'static,
     {
         self.storage().link_channel::<Msg, Self>();
-        self.storage().clone_tx::<Msg, Self>()
+        let tx = self.storage().clone_tx::<Msg, Self>()?;
+        Ok(LifelineSender::new(tx))
     }
 
     fn capacity<Msg>(&self, capacity: usize) -> Result<(), AlreadyLinkedError>

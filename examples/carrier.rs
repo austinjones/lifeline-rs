@@ -1,12 +1,14 @@
 use bus::{MainBus, SubsurfaceBus};
-use lifeline::FromCarrier;
-use lifeline::{Bus, Service};
-use message::{main::MainSend, subsurface::SubsurfaceRecv};
+use lifeline::prelude::*;
+use message::{main::MainSend, subsurface::SubsurfaceSend};
 use service::HelloService;
 use std::time::Duration;
 use tokio::{sync::mpsc::error::TryRecvError, time::delay_for};
 
-/// Spawn two busses, and create a task that drives messages between them
+/// This examples shows how to communicate between Bus instances using the CarryFrom trait
+/// When your application gets large, eventually you need to spawn new tasks as runtime (when a connection arrives)
+/// At that point, you should create a new Bus type, and a Bus instance for each connection.
+/// Your new bus probably needs to communicate with your main application bus, and you can use a Carrier to do this.
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     simple_logger::init().expect("log init failed");
@@ -25,7 +27,7 @@ pub async fn main() -> anyhow::Result<()> {
     let mut tx = main_bus.tx::<MainSend>()?;
 
     // if you try to pull this from MainBus, you'll get a compile error
-    let mut rx = subsurface_bus.rx::<SubsurfaceRecv>()?;
+    let mut rx = subsurface_bus.rx::<SubsurfaceSend>()?;
 
     // As soon as we are done pulling channels, we drop the busses.
     // The carrier will still run - it has grabbed all it's channels.
@@ -40,14 +42,8 @@ pub async fn main() -> anyhow::Result<()> {
     tx.send(MainSend::Goodbye).await?;
 
     let oh_hello = rx.recv().await;
-    assert_eq!(Some(SubsurfaceRecv::OhHello), oh_hello);
+    assert_eq!(Some(SubsurfaceSend::OhHello), oh_hello);
     println!("Subsurface says {:?}", oh_hello.unwrap());
-
-    // the other messages we sent (Hello + Goodbye) weren't forwarded
-    delay_for(Duration::from_millis(200)).await;
-    let next_msg = rx.try_recv();
-    assert_eq!(Err(TryRecvError::Empty), next_msg);
-    println!("No other messages.",);
 
     println!("All done.");
 
@@ -70,14 +66,14 @@ mod message {
     }
 
     pub mod subsurface {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Eq, PartialEq)]
         pub enum SubsurfaceSend {
-            Hello,
+            OhHello,
         }
 
-        #[derive(Debug, Clone, Eq, PartialEq)]
+        #[derive(Debug, Clone)]
         pub enum SubsurfaceRecv {
-            OhHello,
+            Hello,
         }
     }
 }
@@ -93,13 +89,12 @@ mod bus {
         main::MainSend,
         subsurface::{SubsurfaceRecv, SubsurfaceSend},
     };
-    use lifeline::Task;
-    use lifeline::{lifeline_bus, Bus, FromCarrier, Lifeline, Message};
+    use lifeline::prelude::*;
     use tokio::sync::mpsc;
 
     lifeline_bus!(pub struct MainBus);
 
-    // This binds the message ExampleRecv to the bus.
+    // This binds the message MainSend to the bus.
     // We have to specify the channel sender!
     // The the channel sender must implement the Channel trait
     impl Message<MainBus> for MainSend {
@@ -108,27 +103,27 @@ mod bus {
 
     lifeline_bus!(pub struct SubsurfaceBus);
 
-    impl Message<SubsurfaceBus> for SubsurfaceSend {
-        type Channel = mpsc::Sender<Self>;
-    }
-
     impl Message<SubsurfaceBus> for SubsurfaceRecv {
         type Channel = mpsc::Sender<Self>;
     }
 
-    impl FromCarrier<MainBus> for SubsurfaceBus {
+    impl Message<SubsurfaceBus> for SubsurfaceSend {
+        type Channel = mpsc::Sender<Self>;
+    }
+
+    impl CarryFrom<MainBus> for SubsurfaceBus {
         // if you only need one task, you can return Lifeline
         // if you need many tasks, you can return a struct like services do.
 
         type Lifeline = anyhow::Result<Lifeline>;
         fn carry_from(&self, from: &MainBus) -> Self::Lifeline {
             let mut rx_main = from.rx::<MainSend>()?;
-            let mut tx_sub = self.tx::<SubsurfaceSend>()?;
+            let mut tx_sub = self.tx::<SubsurfaceRecv>()?;
 
             let lifeline = Self::try_task("from_main", async move {
                 while let Some(msg) = rx_main.recv().await {
                     match msg {
-                        MainSend::HelloSubsurface => tx_sub.send(SubsurfaceSend::Hello {}).await?,
+                        MainSend::HelloSubsurface => tx_sub.send(SubsurfaceRecv::Hello {}).await?,
                         _ => {}
                     }
                 }
@@ -141,11 +136,15 @@ mod bus {
     }
 }
 
+/// This is the service.
+/// The service is a spawnable task that launches from the bus.
+/// Service spawn is **synchronous** - the spawn should not send/receive messages, and it should be branchless.
+/// This makes errors very predictable.  If you take an MPSC receiver twice, you immediately get the error on startup.
 mod service {
     use super::bus::SubsurfaceBus;
     use crate::message::subsurface::SubsurfaceRecv;
     use crate::message::subsurface::SubsurfaceSend;
-    use lifeline::{Bus, Lifeline, Service, Task};
+    use lifeline::prelude::*;
 
     pub struct HelloService {
         _greet: Lifeline,
@@ -164,14 +163,14 @@ mod service {
             // - which services tx the event
 
             // also, rx before tx!  somewhat like fn service(rx) -> tx {}
-            let mut rx = bus.rx::<SubsurfaceSend>()?;
-            let mut tx = bus.tx::<SubsurfaceRecv>()?;
+            let mut rx = bus.rx::<SubsurfaceRecv>()?;
+            let mut tx = bus.tx::<SubsurfaceSend>()?;
 
             let _greet = Self::try_task("greet", async move {
                 while let Some(recv) = rx.recv().await {
                     match recv {
-                        SubsurfaceSend::Hello => {
-                            tx.send(SubsurfaceRecv::OhHello).await?;
+                        SubsurfaceRecv::Hello => {
+                            tx.send(SubsurfaceSend::OhHello).await?;
                         }
                     }
                 }

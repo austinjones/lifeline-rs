@@ -1,6 +1,7 @@
 use crate::Storage;
 
 mod futures;
+pub mod lifeline;
 // pub mod historical;
 pub mod subscription;
 mod tokio;

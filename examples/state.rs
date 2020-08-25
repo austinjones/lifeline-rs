@@ -1,6 +1,6 @@
 use bus::StateBus;
-use lifeline::{Bus, Service};
-use message::MainSend;
+use lifeline::prelude::*;
+use message::MainRecv;
 use service::{MainService, StateService};
 use state::{LocationState, SkyState, WeatherState};
 use std::time::Duration;
@@ -17,7 +17,7 @@ pub async fn main() -> anyhow::Result<()> {
     let _service = MainService::spawn(&bus)?;
     let _state = StateService::spawn(&bus)?;
 
-    let mut tx = bus.tx::<MainSend>()?;
+    let mut tx = bus.tx::<MainRecv>()?;
     let mut rx = bus.rx::<SkyState>()?;
 
     // The bus *stores* channel endpoints.
@@ -28,7 +28,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     // let's send a few messages for the service to process.
     // in normal stack-based applications, these messages would compare to the arguments of the main function,
-    tx.send(MainSend::Travel(LocationState::Boston)).await?;
+    tx.send(MainRecv::Travel(LocationState::Boston)).await?;
 
     // state updates are asynchronous.  they may not be propagated immediately
     delay_for(Duration::from_millis(20)).await;
@@ -45,7 +45,7 @@ pub async fn main() -> anyhow::Result<()> {
     //
     // let's travel to san diego!
     //
-    tx.send(MainSend::Travel(LocationState::SanDiego)).await?;
+    tx.send(MainRecv::Travel(LocationState::SanDiego)).await?;
 
     // state updates are asynchronous.  they may not be propagated immediately
     delay_for(Duration::from_millis(20)).await;
@@ -79,7 +79,7 @@ mod message {
     //  then it's nice to write a struct.
     // Then multiple services can subscribe via a broadcast channel, and consume the event.
     #[derive(Debug, Clone)]
-    pub enum MainSend {
+    pub enum MainRecv {
         Travel(LocationState),
     }
 
@@ -136,8 +136,14 @@ mod state {
     }
 }
 
+/// This is the lifeline bus.
+/// The bus carries channels (senders/receivers).
+/// The bus knows how to construct these channels, and is lazy,
+///   it constructs on demand.
+/// The bus also carries resources, which are useful for cloneable config structs,
+///   or structs required for initialization.
 mod bus {
-    use crate::message::{MainSend, TravelEvent};
+    use crate::message::{MainRecv, TravelEvent};
     use crate::state::SkyState;
     use lifeline::{lifeline_bus, Message};
     use tokio::sync::{broadcast, mpsc, watch};
@@ -159,18 +165,22 @@ mod bus {
         type Channel = broadcast::Sender<Self>;
     }
 
-    impl Message<StateBus> for MainSend {
+    impl Message<StateBus> for MainRecv {
         type Channel = mpsc::Sender<Self>;
     }
 }
 
+/// This is the service.
+/// The service is a spawnable task that launches from the bus.
+/// Service spawn is **synchronous** - the spawn should not send/receive messages, and it should be branchless.
+/// This makes errors very predictable.  If you take an MPSC receiver twice, you immediately get the error on startup.
 mod service {
     use super::bus::StateBus;
     use crate::{
-        message::{MainSend, TravelEvent},
+        message::{MainRecv, TravelEvent},
         state::{SkyState, WeatherState},
     };
-    use lifeline::{error::into_msg, Bus, Lifeline, Service, Task};
+    use lifeline::prelude::*;
 
     pub struct MainService {
         _greet: Lifeline,
@@ -181,14 +191,14 @@ mod service {
         type Lifeline = anyhow::Result<Self>;
 
         fn spawn(bus: &Self::Bus) -> Self::Lifeline {
-            let mut rx = bus.rx::<MainSend>()?;
-            let tx = bus.tx::<TravelEvent>()?;
+            let mut rx = bus.rx::<MainRecv>()?;
+            let mut tx = bus.tx::<TravelEvent>()?;
 
             let _greet = Self::try_task("greet", async move {
                 while let Some(recv) = rx.recv().await {
                     match recv {
-                        MainSend::Travel(location) => {
-                            tx.send(TravelEvent(location)).map_err(into_msg)?;
+                        MainRecv::Travel(location) => {
+                            tx.send(TravelEvent(location)).await?;
                         }
                     }
                 }
@@ -211,7 +221,10 @@ mod service {
 
         fn spawn(bus: &Self::Bus) -> Self::Lifeline {
             let mut rx = bus.rx::<TravelEvent>()?;
-            let tx = bus.tx::<SkyState>()?;
+
+            // if you need to get to the original channel, you can use into_inner()
+            // this will make your code more fragile when you change the types in the bus, though!
+            let tx = bus.tx::<SkyState>()?.into_inner();
 
             let _travel = Self::try_task("travel", async move {
                 // default is nice!  we can initialize to the same value as the tx stores!
@@ -219,7 +232,7 @@ mod service {
 
                 // there is a small bug here w/ broadcast lagged error.
                 // ignoring it for simplicity :D
-                while let Ok(update) = rx.recv().await {
+                while let Some(update) = rx.recv().await {
                     state.location = update.0;
                     match state.location {
                         crate::state::LocationState::None => state.weather = WeatherState::None,
