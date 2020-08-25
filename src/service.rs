@@ -2,6 +2,7 @@ use crate::{
     spawn::{spawn_task, task_name},
     Bus, Lifeline,
 };
+use async_trait::async_trait;
 use futures::Future;
 use log::{debug, error};
 use std::{any::TypeId, fmt::Debug};
@@ -102,20 +103,13 @@ pub trait Task {
 
 impl<T> Task for T {}
 
-// #[async_trait]
-// pub trait AsyncService: Task {
-//     type Bus: Bus + Send + Sync + 'static;
-//     type Lifeline;
+#[async_trait]
+pub trait AsyncService: Task {
+    type Bus: Bus;
+    type Lifeline;
 
-//     async fn spawn(bus: &Self::Bus) -> Self::Lifeline;
-
-//     async fn spawn_bus() -> (Self::Bus, Self::Lifeline) {
-//         let bus = Self::Bus::default();
-//         let lifeline = Self::spawn(&bus).await;
-
-//         (bus, lifeline)
-//     }
-// }
+    async fn spawn(bus: &Self::Bus) -> Self::Lifeline;
+}
 
 // #[async_trait]
 // pub trait AsyncCarrier: Task {
