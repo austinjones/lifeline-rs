@@ -23,13 +23,13 @@ pub async fn main() -> anyhow::Result<()> {
     // there is an important naming convention here
     // tx - for Sender channels
     // rx - for Recevier channels
-    // ExampleSend - a message which is sent to the service (and the service receives)
-    // ExampleRecv - a message which is sent to the world (and the service sends)
+    // ExampleSend - a message which is sent to the world (and the service sends)
+    // ExampleRecv - a message which is sent to the service (and the service receives)
 
-    // this side of the channel is 'covariant'.
-    //   we tx a 'send' msg, and rx a 'recv' message.
+    // this side of the channel is 'contravariant'.
+    //   we rx a 'send' msg, and tx a 'recv' message.
     // if we were in the service,
-    //   we would tx a 'recv' message, and 'rx' a send message
+    //   we would rx a 'recv' message, and 'tx' a send message
     // this naming convention helps a lot when reading code
 
     // taking receivers out of the bus is fallible.  behavior depends on the channel type
@@ -41,6 +41,10 @@ pub async fn main() -> anyhow::Result<()> {
     //   broadcast:  clone Sender / clone Receiver
     //   oneshot:    take Sender  / take  Receiver
     //   watch:      take Sender  / clone Receiver
+
+    // lifeline also tries to make the channel type easy to change.
+    // it wraps the concrete sender/receiver types in an adapter type,
+    // which implements the lifeline::Sender / lifeline::Receiver trait
     let mut rx = bus.rx::<ExampleSend>()?;
     let mut tx = bus.tx::<ExampleRecv>()?;
 
