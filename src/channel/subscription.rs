@@ -122,7 +122,7 @@ mod channel {
             self.tx
                 .send(value)
                 .await
-                .map_err(|err| crate::channel::lifeline::SendError(err.0))
+                .map_err(|err| crate::channel::lifeline::SendError::Return(err.0))
         }
     }
 
