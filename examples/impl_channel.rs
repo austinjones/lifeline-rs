@@ -112,7 +112,7 @@ mod receiver {
     use lifeline::{impl_channel_take, Receiver};
     use std::{fmt::Debug, marker::PhantomData};
 
-    /// Define a dummy Sender type that implements clone
+    /// Define a dummy Receiver type that implements clone
     #[derive(Clone)]
     pub struct ExampleReceiver<T> {
         _t: PhantomData<T>,
@@ -125,8 +125,9 @@ mod receiver {
             Self { _t: PhantomData }
         }
 
-        /// Define a dummy recv method that receives
-        /// Note that this may return an error, but we will be forced to discard it in the Receiver implementation
+        /// Define a dummy recv method that returns an error
+        /// Note that we will be forced to discard it in the Receiver implementation.
+        /// More on that below.
         pub async fn recv() -> Result<T, CustomError> {
             Err(CustomError {})
         }
