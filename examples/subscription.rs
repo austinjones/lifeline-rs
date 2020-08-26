@@ -33,34 +33,20 @@ pub async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// These are the messages which our application uses to communicate.
-/// The messages are carried over channels, using an async library (tokio, async_std, futures).
-///
-/// Send/Recv
 mod message {
+    // We derive a Hash + Eq key that can be used on the bus
     #[derive(Debug, Clone, Hash, Eq, PartialEq)]
     pub struct ExampleId(pub u64);
 }
 
-/// This is the lifeline bus.
-/// The bus carries channels (senders/receivers).
-/// The bus knows how to construct these channels, and is lazy,
-///   it constructs on demand.
-/// The bus also carries resources, which are useful for cloneable config structs,
-///   or structs required for initialization.
 mod bus {
     use crate::message::ExampleId;
     use lifeline::{lifeline_bus, subscription, Message};
 
-    // This is a macro that generates an ExampleBus struct,
-    //   and implements DynBus for it.
-    // DynBus stores the channels in Box<dyn Any> slots,
-    //  and deals with all the dyn trait magic for us.
     lifeline_bus!(pub struct SubscriptionBus);
 
-    // This binds the message ExampleRecv to the bus.
-    // We have to specify the channel sender!
-    // The the channel sender must implement the Channel trait
+    // We bind a message of Subscription<ExampleId>, as that is the message type we send.
+    // The receiver is aware of the type and is able to answer questions about subscription status.
     impl Message<SubscriptionBus> for subscription::Subscription<ExampleId> {
         type Channel = subscription::Sender<ExampleId>;
     }
