@@ -47,13 +47,13 @@ mod sender {
     }
 
     impl<T> ExampleSender<T> {
-        pub fn new(capacity: usize) -> Self {
+        pub fn new(_capacity: usize) -> Self {
             Self { _t: PhantomData }
         }
 
         /// Define a dummy send method that either 'sends' with Ok, or returns the value to the caller.
         /// This would be the real send implementation, that communicates with the Receiver.
-        pub fn send(value: T) -> Result<(), T> {
+        pub fn send(_value: T) -> Result<(), T> {
             Ok(())
         }
     }
