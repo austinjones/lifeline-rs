@@ -1,5 +1,5 @@
 use super::Channel;
-use crate::channel::lifeline::SendError as LifelineSendError;
+use crate::error::SendError as LifelineSendError;
 use crate::{error::type_name, impl_channel_clone, impl_channel_take};
 use async_trait::async_trait;
 use log::debug;
@@ -27,7 +27,7 @@ impl<T> crate::Sender<T> for mpsc::Sender<T>
 where
     T: Debug + Send,
 {
-    async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
+    async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
         mpsc::Sender::send(self, value)
             .await
             .map_err(|err| LifelineSendError::Return(err.0))
@@ -78,7 +78,7 @@ impl<T> crate::Sender<T> for broadcast::Sender<T>
 where
     T: Debug + Send,
 {
-    async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
+    async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
         broadcast::Sender::send(self, value)
             .map(|_| ())
             .map_err(|err| LifelineSendError::Return(err.0))
@@ -150,7 +150,7 @@ impl<T> crate::Sender<T> for watch::Sender<T>
 where
     T: Clone + Debug + Send + Sync,
 {
-    async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
+    async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
         watch::Sender::broadcast(self, value).map_err(|_| LifelineSendError::Closed)
     }
 }

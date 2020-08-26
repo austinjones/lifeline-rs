@@ -63,6 +63,7 @@ mod bus {
 
 mod channel {
     use super::messages::{Subscription, SubscriptionState};
+    use crate::error::SendError as LifelineSendError;
     use crate::{impl_channel_clone, Lifeline};
     use async_trait::async_trait;
     use std::{fmt::Debug, hash::Hash, sync::Arc};
@@ -118,11 +119,11 @@ mod channel {
         async fn send(
             &mut self,
             value: Subscription<T>,
-        ) -> Result<(), crate::channel::lifeline::SendError<Subscription<T>>> {
+        ) -> Result<(), LifelineSendError<Subscription<T>>> {
             self.tx
                 .send(value)
                 .await
-                .map_err(|err| crate::channel::lifeline::SendError::Return(err.0))
+                .map_err(|err| LifelineSendError::Return(err.0))
         }
     }
 
