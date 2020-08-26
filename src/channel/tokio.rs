@@ -30,7 +30,7 @@ where
     async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
         mpsc::Sender::send(self, value)
             .await
-            .map_err(|err| LifelineSendError(err.0))
+            .map_err(|err| LifelineSendError::Return(err.0))
     }
 }
 
@@ -81,7 +81,7 @@ where
     async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
         broadcast::Sender::send(self, value)
             .map(|_| ())
-            .map_err(|err| LifelineSendError(err.0))
+            .map_err(|err| LifelineSendError::Return(err.0))
     }
 }
 
@@ -148,12 +148,10 @@ impl_channel_clone!(watch::Receiver<T>);
 #[async_trait]
 impl<T> crate::Sender<T> for watch::Sender<T>
 where
-    T: Debug + Send + Sync,
+    T: Clone + Debug + Send + Sync,
 {
     async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
-        watch::Sender::send(self, value)
-            .await
-            .map_err(|err| LifelineSendError(err.0))
+        watch::Sender::broadcast(self, value).map_err(|_| LifelineSendError::Closed)
     }
 }
 
