@@ -1,5 +1,5 @@
 use bus::ExampleBus;
-use lifeline::{Bus, Service};
+use lifeline::prelude::*;
 use message::{ExampleRecv, ExampleSend};
 use service::ExampleService;
 
@@ -23,13 +23,13 @@ pub async fn main() -> anyhow::Result<()> {
     // there is an important naming convention here
     // tx - for Sender channels
     // rx - for Recevier channels
-    // ExampleSend - a message which is sent to the service (and the service receives)
-    // ExampleRecv - a message which is sent to the world (and the service sends)
+    // ExampleSend - a message which is sent to the world (and the service sends)
+    // ExampleRecv - a message which is sent to the service (and the service receives)
 
-    // this side of the channel is 'covariant'.
-    //   we tx a 'send' msg, and rx a 'recv' message.
+    // this side of the channel is 'contravariant'.
+    //   we rx a 'send' msg, and tx a 'recv' message.
     // if we were in the service,
-    //   we would tx a 'recv' message, and 'rx' a send message
+    //   we would rx a 'recv' message, and 'tx' a send message
     // this naming convention helps a lot when reading code
 
     // taking receivers out of the bus is fallible.  behavior depends on the channel type
@@ -41,8 +41,12 @@ pub async fn main() -> anyhow::Result<()> {
     //   broadcast:  clone Sender / clone Receiver
     //   oneshot:    take Sender  / take  Receiver
     //   watch:      take Sender  / clone Receiver
-    let mut rx = bus.rx::<ExampleRecv>()?;
-    let mut tx = bus.tx::<ExampleSend>()?;
+
+    // lifeline also tries to make the channel type easy to change.
+    // it wraps the concrete sender/receiver types in an adapter type,
+    // which implements the lifeline::Sender / lifeline::Receiver trait
+    let mut rx = bus.rx::<ExampleSend>()?;
+    let mut tx = bus.tx::<ExampleRecv>()?;
 
     // The bus *stores* channel endpoints.
     // As soon as your bus has been used to spawn your service,
@@ -52,15 +56,15 @@ pub async fn main() -> anyhow::Result<()> {
 
     // let's send a few messages for the service to process.
     // in normal stack-based applications, these messages would compare to the arguments of the main function,
-    tx.send(ExampleSend::Hello).await?;
-    tx.send(ExampleSend::Goodbye).await?;
+    tx.send(ExampleRecv::Hello).await?;
+    tx.send(ExampleRecv::Goodbye).await?;
 
     let oh_hello = rx.recv().await;
-    assert_eq!(Some(ExampleRecv::OhHello), oh_hello);
+    assert_eq!(Some(ExampleSend::OhHello), oh_hello);
     println!("Service says {:?}", oh_hello.unwrap());
 
     let aww_ok = rx.recv().await;
-    assert_eq!(Some(ExampleRecv::AwwOk), aww_ok);
+    assert_eq!(Some(ExampleSend::AwwOk), aww_ok);
     println!("Service says {:?}", aww_ok.unwrap());
 
     println!("All done.");
@@ -73,16 +77,16 @@ pub async fn main() -> anyhow::Result<()> {
 ///
 /// Send/Recv
 mod message {
-    #[derive(Debug, Clone)]
-    pub enum ExampleSend {
-        Hello,
-        Goodbye,
-    }
-
     #[derive(Debug, Clone, Eq, PartialEq)]
-    pub enum ExampleRecv {
+    pub enum ExampleSend {
         OhHello,
         AwwOk,
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum ExampleRecv {
+        Hello,
+        Goodbye,
     }
 }
 
@@ -106,19 +110,23 @@ mod bus {
     // This binds the message ExampleRecv to the bus.
     // We have to specify the channel sender!
     // The the channel sender must implement the Channel trait
-    impl Message<ExampleBus> for ExampleRecv {
+    impl Message<ExampleBus> for ExampleSend {
         type Channel = mpsc::Sender<Self>;
     }
 
-    impl Message<ExampleBus> for ExampleSend {
+    impl Message<ExampleBus> for ExampleRecv {
         type Channel = mpsc::Sender<Self>;
     }
 }
 
+/// This is the service.
+/// The service is a spawnable task that launches from the bus.
+/// Service spawn is **synchronous** - the spawn should not send/receive messages, and it should be branchless.
+/// This makes errors very predictable.  If you take an MPSC receiver twice, you immediately get the error on startup.
 mod service {
     use super::bus::ExampleBus;
     use crate::message::{ExampleRecv, ExampleSend};
-    use lifeline::{Bus, Lifeline, Service, Task};
+    use lifeline::prelude::*;
 
     pub struct ExampleService {
         _greet: Lifeline,
@@ -137,17 +145,17 @@ mod service {
             // - which services tx the event
 
             // also, rx before tx!  somewhat like fn service(rx) -> tx {}
-            let mut rx = bus.rx::<ExampleSend>()?;
-            let mut tx = bus.tx::<ExampleRecv>()?;
+            let mut rx = bus.rx::<ExampleRecv>()?;
+            let mut tx = bus.tx::<ExampleSend>()?;
 
             let _greet = Self::try_task("greet", async move {
                 while let Some(recv) = rx.recv().await {
                     match recv {
-                        ExampleSend::Hello => {
-                            tx.send(ExampleRecv::OhHello).await?;
+                        ExampleRecv::Hello => {
+                            tx.send(ExampleSend::OhHello).await?;
                         }
-                        ExampleSend::Goodbye => {
-                            tx.send(ExampleRecv::AwwOk).await?;
+                        ExampleRecv::Goodbye => {
+                            tx.send(ExampleSend::AwwOk).await?;
                         }
                     }
                 }

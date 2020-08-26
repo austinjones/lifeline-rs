@@ -1,16 +1,6 @@
-use crate::{
-    bus::{Link, Message, Resource},
-    error::{type_name, AlreadyLinkedError, TakeChannelError, TakeResourceError},
-    Bus, Channel, Storage,
-};
+use crate::{error::type_name, Channel, Storage};
 
-use std::{
-    any::{Any, TypeId},
-    collections::{HashMap, HashSet},
-    fmt::Debug,
-    marker::PhantomData,
-    sync::{RwLock, RwLockWriteGuard},
-};
+use std::{any::Any, fmt::Debug};
 
 pub(crate) struct BusSlot {
     name: String,

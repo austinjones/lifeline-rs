@@ -30,32 +30,32 @@ where
     }
 }
 
-pub trait FromCarrier<IntoBus: Bus>: Bus + Task + Sized {
+pub trait CarryFrom<IntoBus: Bus>: Bus + Task + Sized {
     type Lifeline;
 
     fn carry_from(&self, from: &IntoBus) -> Self::Lifeline;
 }
 
-pub trait IntoCarrier<IntoBus: Bus>: Bus + Task + Sized {
+pub trait CarryInto<IntoBus: Bus>: Bus + Task + Sized {
     type Lifeline;
 
     fn carry_into(&self, into: &IntoBus) -> Self::Lifeline;
 }
 
-impl<F, I> IntoCarrier<I> for F
+impl<F, I> CarryInto<I> for F
 where
-    I: FromCarrier<F>,
+    I: CarryFrom<F>,
     F: Bus,
     I: Bus,
 {
-    type Lifeline = <I as FromCarrier<F>>::Lifeline;
+    type Lifeline = <I as CarryFrom<F>>::Lifeline;
 
     fn carry_into(&self, into: &I) -> Self::Lifeline {
         into.carry_from(self)
     }
 }
 
-pub trait DefaultCarrier<FromBus: Bus>: FromCarrier<FromBus> {
+pub trait DefaultCarrier<FromBus: Bus>: CarryFrom<FromBus> {
     fn carry_default() -> (Self, FromBus, Self::Lifeline) {
         let into = Self::default();
         let from = FromBus::default();

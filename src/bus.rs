@@ -1,4 +1,5 @@
 use crate::{
+    channel::lifeline::{receiver::LifelineReceiver, sender::LifelineSender},
     error::{AlreadyLinkedError, TakeChannelError, TakeResourceError},
     Channel, Storage,
 };
@@ -25,11 +26,15 @@ pub trait Bus: Default + Debug + Sized {
     where
         Msg: Message<Self> + 'static;
 
-    fn rx<Msg>(&self) -> Result<<Msg::Channel as Channel>::Rx, TakeChannelError>
+    fn rx<Msg>(
+        &self,
+    ) -> Result<LifelineReceiver<Msg, <Msg::Channel as Channel>::Rx>, TakeChannelError>
     where
         Msg: Message<Self> + 'static;
 
-    fn tx<Msg>(&self) -> Result<<Msg::Channel as Channel>::Tx, TakeChannelError>
+    fn tx<Msg>(
+        &self,
+    ) -> Result<LifelineSender<Msg, <Msg::Channel as Channel>::Tx>, TakeChannelError>
     where
         Msg: Message<Self> + 'static;
 
