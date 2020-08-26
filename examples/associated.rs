@@ -65,14 +65,6 @@ mod service {
         type Lifeline = anyhow::Result<Self>;
 
         fn spawn(bus: &Self::Bus) -> Self::Lifeline {
-            // The generic args here are required, by design.
-            // Type inference would be nice, but if you type the message name here,
-            //   you can GREP THE NAME!  Just search an event name and you'll see:
-            // - which bus(es) the event is carried on
-            // - which services rx the event
-            // - which services tx the event
-
-            // also, rx before tx!  somewhat like fn service(rx) -> tx {}
             let rx = bus.rx::<ExampleRecv>()?;
             let tx = bus.tx::<ExampleSend>()?;
 
