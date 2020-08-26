@@ -119,7 +119,8 @@ mod channel {
             &mut self,
             value: Subscription<T>,
         ) -> Result<(), crate::channel::lifeline::SendError<Subscription<T>>> {
-            self.send(value)
+            self.tx
+                .send(value)
                 .await
                 .map_err(|err| crate::channel::lifeline::SendError(err.0))
         }
@@ -181,7 +182,7 @@ mod channel {
         T: Clone + Debug + Send + Sync,
     {
         async fn recv(&mut self) -> Option<SubscriptionState<T>> {
-            Receiver::recv(self).await
+            self.rx.recv().await
         }
     }
 }
