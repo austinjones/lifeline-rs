@@ -2,6 +2,7 @@ mod bus;
 mod channel;
 pub mod dyn_bus;
 pub mod error;
+pub mod prelude;
 pub mod request;
 mod service;
 mod spawn;
@@ -11,6 +12,7 @@ mod storage;
 pub mod test;
 
 pub use bus::*;
+pub use channel::lifeline::{Receiver, Sender};
 pub use channel::subscription;
 pub use channel::Channel;
 pub use service::*;

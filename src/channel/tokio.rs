@@ -1,5 +1,9 @@
 use super::Channel;
-use crate::{impl_channel_clone, impl_channel_take};
+use crate::channel::lifeline::SendError as LifelineSendError;
+use crate::{error::type_name, impl_channel_clone, impl_channel_take};
+use async_trait::async_trait;
+use log::debug;
+use std::fmt::Debug;
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 
 impl<T: Send + 'static> Channel for mpsc::Sender<T> {
@@ -17,6 +21,28 @@ impl<T: Send + 'static> Channel for mpsc::Sender<T> {
 
 impl_channel_clone!(mpsc::Sender<T>);
 impl_channel_take!(mpsc::Receiver<T>);
+
+#[async_trait]
+impl<T> crate::Sender<T> for mpsc::Sender<T>
+where
+    T: Debug + Send,
+{
+    async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
+        mpsc::Sender::send(self, value)
+            .await
+            .map_err(|err| LifelineSendError(err.0))
+    }
+}
+
+#[async_trait]
+impl<T> crate::Receiver<T> for mpsc::Receiver<T>
+where
+    T: Debug + Send,
+{
+    async fn recv(&mut self) -> Option<T> {
+        mpsc::Receiver::recv(self).await
+    }
+}
 
 impl<T: Send + 'static> Channel for broadcast::Sender<T> {
     type Tx = Self;
@@ -46,6 +72,43 @@ impl_channel_clone!(broadcast::Sender<T>);
 
 // this is actually overriden in clone_rx
 impl_channel_take!(broadcast::Receiver<T>);
+
+#[async_trait]
+impl<T> crate::Sender<T> for broadcast::Sender<T>
+where
+    T: Debug + Send,
+{
+    async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
+        broadcast::Sender::send(self, value)
+            .map(|_| ())
+            .map_err(|err| LifelineSendError(err.0))
+    }
+}
+
+#[async_trait]
+impl<T> crate::Receiver<T> for broadcast::Receiver<T>
+where
+    T: Clone + Debug + Send,
+{
+    async fn recv(&mut self) -> Option<T> {
+        loop {
+            let result = broadcast::Receiver::recv(self).await;
+
+            match result {
+                Ok(t) => return Some(t),
+                Err(broadcast::RecvError::Closed) => return None,
+                Err(broadcast::RecvError::Lagged(n)) => {
+                    // we keep the broadcast complexity localized here.
+                    // instead of making things very complicated for mpsc, watch, etc receivers,
+                    // we log a debug message when a lag occurs, even if logging was not requested.
+
+                    debug!("LAGGED {} {}", n, type_name::<T>());
+                    continue;
+                }
+            }
+        }
+    }
+}
 
 impl<T: Send + 'static> Channel for oneshot::Sender<T> {
     type Tx = Self;
@@ -81,3 +144,25 @@ where
 
 impl_channel_take!(watch::Sender<T>);
 impl_channel_clone!(watch::Receiver<T>);
+
+#[async_trait]
+impl<T> crate::Sender<T> for watch::Sender<T>
+where
+    T: Debug + Send + Sync,
+{
+    async fn send(&mut self, value: T) -> Result<(), super::lifeline::SendError<T>> {
+        watch::Sender::send(self, value)
+            .await
+            .map_err(|err| LifelineSendError(err.0))
+    }
+}
+
+#[async_trait]
+impl<T> crate::Receiver<T> for watch::Receiver<T>
+where
+    T: Clone + Debug + Send + Sync,
+{
+    async fn recv(&mut self) -> Option<T> {
+        watch::Receiver::recv(self).await
+    }
+}
