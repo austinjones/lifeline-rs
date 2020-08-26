@@ -95,7 +95,7 @@ impl<B: Bus> DynBusStorage<B> {
             .ok_or_else(|| TakeChannelError::partial_take::<Bus, Msg>(Link::Rx))?;
 
         slot.clone_rx::<Msg::Channel>(tx)
-            .ok_or_else(|| TakeChannelError::already_taken::<Bus, Msg>(Link::Tx))
+            .ok_or_else(|| TakeChannelError::already_taken::<Bus, Msg>(Link::Rx))
     }
 
     pub fn clone_tx<Msg, Bus>(&self) -> Result<<Msg::Channel as Channel>::Tx, TakeChannelError>
