@@ -19,6 +19,9 @@ pub async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// The Sender & Receiver trait allows lifeline users to do this.  it also works with &mut impl Receiver<...>
+/// It's really nice for switching between broadcast/mpsc channels on the bus.
+/// Their service implementatons can just work, even with major changes to how channels are actually bound.
 async fn associated(mut rx: impl Receiver<ExampleMessage>) {
     let rx = rx.recv().await;
     assert_eq!(None, rx);
