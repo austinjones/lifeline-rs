@@ -64,7 +64,8 @@ mod bus {
 mod channel {
     use super::messages::{Subscription, SubscriptionState};
     use crate::{impl_channel_clone, Lifeline};
-    use std::{hash::Hash, sync::Arc};
+    use async_trait::async_trait;
+    use std::{fmt::Debug, hash::Hash, sync::Arc};
     use tokio::sync::{mpsc, watch};
 
     #[derive(Debug)]
@@ -108,6 +109,22 @@ mod channel {
     }
 
     impl_channel_clone!(Sender<T>);
+
+    #[async_trait]
+    impl<T> crate::Sender<Subscription<T>> for Sender<T>
+    where
+        T: Debug + Send + Sync,
+    {
+        async fn send(
+            &mut self,
+            value: Subscription<T>,
+        ) -> Result<(), crate::channel::lifeline::SendError<Subscription<T>>> {
+            self.send(value)
+                .await
+                .map_err(|err| crate::channel::lifeline::SendError(err.0))
+        }
+    }
+
     // impl<T: Send + 'static> crate::Storage for Sender<T> {
     //     fn take_or_clone(res: &mut Option<Self>) -> Option<Self> {
     //         Self::clone_slot(res)
@@ -135,6 +152,12 @@ mod channel {
         }
     }
 
+    impl<T: Clone> Receiver<T> {
+        pub async fn recv(&mut self) -> Option<SubscriptionState<T>> {
+            self.rx.recv().await
+        }
+    }
+
     impl<T: Hash + Eq + Clone> Receiver<T> {
         fn iter(&self) -> impl Iterator<Item = T> {
             let items = self.rx.borrow().subscriptions.clone();
@@ -151,6 +174,16 @@ mod channel {
     }
 
     impl_channel_clone!(Receiver<T>);
+
+    #[async_trait]
+    impl<T> crate::Receiver<SubscriptionState<T>> for Receiver<T>
+    where
+        T: Clone + Debug + Send + Sync,
+    {
+        async fn recv(&mut self) -> Option<SubscriptionState<T>> {
+            Receiver::recv(self).await
+        }
+    }
 }
 
 mod messages {
