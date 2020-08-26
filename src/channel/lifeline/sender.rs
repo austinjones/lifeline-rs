@@ -67,3 +67,16 @@ impl<T, S: Debug> Debug for LifelineSender<T, S> {
             .finish()
     }
 }
+
+impl<T, S> Clone for LifelineSender<T, S>
+where
+    S: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            log: self.log,
+            _t: PhantomData,
+        }
+    }
+}

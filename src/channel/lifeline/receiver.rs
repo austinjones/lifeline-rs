@@ -1,6 +1,7 @@
 use super::Receiver;
 use async_trait::async_trait;
 
+use log::debug;
 use pin_project::pin_project;
 use std::{
     fmt::Debug,
@@ -12,8 +13,6 @@ pub struct LifelineReceiver<T, R> {
     #[pin]
     inner: R,
     log: bool,
-    // will the channel stop if there are
-    strict: bool,
     _t: PhantomData<T>,
 }
 
@@ -22,14 +21,8 @@ impl<T, R> LifelineReceiver<T, R> {
         Self {
             inner,
             log: false,
-            strict: false,
             _t: PhantomData,
         }
-    }
-
-    pub fn strict(mut self) -> Self {
-        self.strict = true;
-        self
     }
 
     pub fn log(mut self) -> Self {
@@ -65,7 +58,26 @@ where
     R: Send + Receiver<T>,
 {
     async fn recv(&mut self) -> Option<T> {
-        self.inner.recv().await
+        let option = self.inner.recv().await;
+
+        if self.log && option.is_some() {
+            debug!("RECV: {:?}", option.as_ref().unwrap());
+        }
+
+        option
+    }
+}
+
+impl<T, R> Clone for LifelineReceiver<T, R>
+where
+    R: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            log: self.log,
+            _t: PhantomData,
+        }
     }
 }
 
