@@ -1,18 +1,8 @@
 pub(crate) mod receiver;
 pub(crate) mod sender;
+use crate::error::SendError;
 use async_trait::async_trait;
 use std::fmt::Debug;
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-#[error("send error: ")]
-pub enum SendError<T: Debug> {
-    #[error("channel closed, message: {0:?}")]
-    Return(T),
-
-    #[error("channel closed")]
-    Closed,
-}
 
 impl<T: Debug> SendError<T> {
     pub fn take_message(self) -> Option<T> {

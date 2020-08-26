@@ -8,6 +8,16 @@ pub fn into_msg<Err: Debug>(err: Err) -> anyhow::Error {
     anyhow::Error::msg(message)
 }
 
+#[derive(Error, Debug, PartialEq)]
+#[error("send error: ")]
+pub enum SendError<T: Debug> {
+    #[error("channel closed, message: {0:?}")]
+    Return(T),
+
+    #[error("channel closed")]
+    Closed,
+}
+
 pub(crate) fn type_name<T>() -> String {
     let name = std::any::type_name::<T>();
 
