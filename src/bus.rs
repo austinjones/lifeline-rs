@@ -12,11 +12,11 @@ pub trait Message<Bus>: Debug {
 
 pub trait Resource<Bus>: Storage + Debug + Send {}
 
-pub trait Serves<Msg> {}
-impl<B, Msg> Serves<Msg> for B where Msg: Message<B> {}
+// pub trait Serves<Msg> {}
+// impl<B, Msg> Serves<Msg> for B where Msg: Message<B> {}
 
-pub trait Stores<Res> {}
-impl<B, R> Stores<R> for B where R: Resource<B> {}
+// pub trait Stores<Res> {}
+// impl<B, R> Stores<R> for B where R: Resource<B> {}
 
 /// The bus carries
 pub trait Bus: Default + Debug + Sized {
