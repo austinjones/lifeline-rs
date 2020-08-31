@@ -103,13 +103,13 @@ pub trait Task {
 
 impl<T> Task for T {}
 
-#[async_trait]
-pub trait AsyncService: Task {
-    type Bus: Bus;
-    type Lifeline;
+// #[async_trait]
+// pub trait AsyncService: Task {
+//     type Bus: Bus;
+//     type Lifeline;
 
-    async fn spawn(bus: &Self::Bus) -> Self::Lifeline;
-}
+//     async fn spawn(bus: &Self::Bus) -> Self::Lifeline;
+// }
 
 // #[async_trait]
 // pub trait AsyncCarrier: Task {
