@@ -1,0 +1,23 @@
+name: Release
+on:
+  release: 
+    types: [published]
+
+jobs:
+  crates_io:
+    name: crates.io publish
+    needs: binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: cargo publish
+        run: cargo publish --manifest-path ./tab/Cargo.toml --token ${{ secrets.CRATES_IO_TOKEN }}

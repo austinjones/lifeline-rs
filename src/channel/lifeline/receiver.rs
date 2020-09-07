@@ -8,6 +8,8 @@ use std::{
     marker::{PhantomData, Send},
 };
 
+/// A wrapper which provides a stable [Receiver](./trait.Receiver.html) implementation, returned by [bus.rx::\<Msg\>()](trait.Bus.html#tymethod.rx).
+/// Can be unwrapped with [into_inner()](./struct.LifelineReceiver.html#method.into_inner)
 #[pin_project(project = InnerProjection)]
 pub struct LifelineReceiver<T, R> {
     #[pin]
@@ -25,19 +27,23 @@ impl<T, R> LifelineReceiver<T, R> {
         }
     }
 
+    /// Enables trace-level logging for this receiver
     pub fn log(mut self) -> Self {
         self.log = true;
         self
     }
 
+    /// Returns a reference to the inner receiver
     pub fn inner(&self) -> &R {
         &self.inner
     }
 
+    /// Returns a mutable reference to the inner receiver
     pub fn inner_mut(&mut self) -> &mut R {
         &mut self.inner
     }
 
+    /// Consumes the wrapper, and returns the inner receiver
     pub fn into_inner(self) -> R {
         self.inner
     }
@@ -81,6 +87,7 @@ where
     }
 }
 
+#[cfg(feature = "tokio-channels")]
 mod tokio {
     use super::LifelineReceiver;
     use std::{

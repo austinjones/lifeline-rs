@@ -8,6 +8,17 @@ Lifeline provides:
  - The Task, an async future which returns a lifeline when spawned.  When the lifeline is dropped, the future is immedately cancelled.
  - The Resource, a struct which can be stored in the bus, and taken (or cloned) when services spawn.
 
+## Quickstart
+Lifeline uses `tokio` as it's default runtime.  Tokio provides a rich set of async channels.
+```toml
+lifeline = "0.3"
+```
+
+Lifeline also supports the async-std runtime, and it's `mpsc` channel implementation:
+```toml
+lifeline = { version = "0.3", features = ["dyn-bus", "async-std-executor", "async-std-channels"] }
+```
+
 ## The Bus
 The bus carries channels and resources.  When services spawn, they receive a reference to the bus.
 
@@ -161,9 +172,10 @@ impl Service for ExampleService {
 ```
 
 ## The Task
-The Task executes an `Future`, but returns a Lifeline when spawned.  
+The Task executes a `Future`, and returns a Lifeline when spawned.  When the lifeline is dropped, the future is immediately cancelled.
 
-`Task` is a trait that is implemented for all types - you can import it and use `Self::task` in any type, but in Lifeline it's used within `Service` implementations.
+`Task` is a trait that is implemented for all types - you can import it and use `Self::task` in any type.  In lifeline, it's 
+most commonly used in Service implementations.
 
 Tasks can be infallible:
 ```rust

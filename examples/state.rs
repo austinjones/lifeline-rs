@@ -2,6 +2,7 @@ use bus::StateBus;
 use lifeline::prelude::*;
 use message::MainRecv;
 use service::{MainService, StateService};
+use simple_logger::SimpleLogger;
 use state::{LocationState, SkyState, WeatherState};
 use std::time::Duration;
 use tokio::time::delay_for;
@@ -10,7 +11,7 @@ use tokio::time::delay_for;
 /// For documentation on basic concepts (bus/service/channels), see the 'hello' example.
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    simple_logger::init().expect("log init failed");
+    SimpleLogger::new().init().expect("log init failed");
 
     let bus = StateBus::default();
 

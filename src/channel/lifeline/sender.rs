@@ -4,6 +4,8 @@ use log::trace;
 
 use std::{fmt::Debug, marker::PhantomData};
 
+/// A wrapper which provides a stable [Sender](./trait.Sender.html) implementation, returned by [bus.tx::\<Msg\>()](trait.Bus.html#tymethod.tx).
+/// Can be unwrapped with [into_inner()](./struct.LifelineSender.html#method.into_inner)
 pub struct LifelineSender<T, S> {
     inner: S,
     log: bool,
@@ -19,19 +21,23 @@ impl<T, S> LifelineSender<T, S> {
         }
     }
 
+    /// Enables trace-level logging for messages sent over the channel
     pub fn log(mut self) -> Self {
         self.log = true;
         self
     }
 
+    /// Returns a reference to the inner sender
     pub fn inner(&self) -> &S {
         &self.inner
     }
 
+    /// Returns a mutable reference to the inner sender
     pub fn inner_mut(&mut self) -> &mut S {
         &mut self.inner
     }
 
+    /// Consumes the wrapper, and returns the inner sender
     pub fn into_inner(self) -> S {
         self.inner
     }

@@ -1,4 +1,6 @@
-use futures::Future;
+//! A request/response helper type, which can be sent over messages.
+
+use std::future::Future;
 use tokio::sync::oneshot;
 
 /// If you need synchronous RPC, you can use this utility
