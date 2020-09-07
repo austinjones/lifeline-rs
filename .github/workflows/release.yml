@@ -6,7 +6,6 @@ on:
 jobs:
   crates_io:
     name: crates.io publish
-    needs: binaries
     runs-on: ubuntu-latest
     steps:
       - name: checkout
