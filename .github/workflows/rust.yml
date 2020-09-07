@@ -74,6 +74,7 @@ jobs:
           command: run
           args: --example associated
 
+          
       # Run the async-std example with custom features
       # - name: example | async-std
       #   uses: actions-rs/cargo@v1
