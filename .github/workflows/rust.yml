@@ -19,6 +19,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
           key: ${{ runner.os }}-cargo-check-${{ hashFiles('**/Cargo.toml') }}
 
@@ -54,6 +55,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
 
@@ -79,7 +81,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --example async-std --no-default-features --features "dyn-bus async-std-executor async-std-channels"
+          args: --example async-std --no-default-features --features "dyn-bus async-std-executor async-std-channels async-std-attributes"
 
       - name: example | carrier
         uses: actions-rs/cargo@v1
