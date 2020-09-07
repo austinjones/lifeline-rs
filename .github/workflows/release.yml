@@ -19,4 +19,4 @@ jobs:
           override: true
 
       - name: cargo publish
-        run: cargo publish --manifest-path ./tab/Cargo.toml --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
