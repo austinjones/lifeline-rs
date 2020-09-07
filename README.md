@@ -55,8 +55,8 @@ impl Message<MainBus> for MainRecv {
 fn use_bus() -> anyhow::Result<()> {
     let bus = MainBus::default();
 
-    let tx_main = bus.tx::<MainSend>()?;
-    tx_main.send(MainSend {});
+    let tx_main = bus.tx::<MainRecv>()?;
+    tx_main.send(MainRecv {});
 
     Ok(())
 }
@@ -106,8 +106,8 @@ impl Service for ExampleService {
     type Lifeline = Lifeline;
 
     fn spawn(bus: &Self::Bus) -> Self::Lifeline {
-        let mut rx = bus.rx::<ExampleSend>()?;
-        let mut tx = bus.tx::<ExampleRecv>()?;
+        let mut rx = bus.rx::<ExampleRecv>()?;
+        let mut tx = bus.tx::<ExampleSend>()?;
         let config = bus.resource::<ExampleConfig>()?;
 
         Self::task("greet", async move {
@@ -150,23 +150,23 @@ async fn test() -> anyhow::Result<()> {
     let bus = MainBus::default();
     let service = MainService::spawn(&bus)?;
 
-    // the service took `bus.rx::<MainSend>()`
-    //                + `bus.tx::<MainRecv>()`
+    // the service took `bus.rx::<MainRecv>()`
+    //                + `bus.tx::<MainSend>()`
     // let's communicate using channels we take.
-    let tx = bus.tx::<MainSend>()?;
-    let rx = bus.rx::<MainRecv>()?;
+    let tx = bus.tx::<MainRecv>()?;
+    let rx = bus.rx::<MainSend>()?;
 
     // drop the bus, so that any 'channel closed' errors will occur during our test.
     // this would likely happen in practice during the long lifetime of the program
     drop(bus);
 
-    tx.send(MainSend::MyMessage)?;
+    tx.send(MainRecv::MyMessage)?;
 
     // wait up to 200ms for the message to arrive
     // if we remove the 200 at the end, the default is 50ms
     lifeline::assert_completes!(async move {
         let response = rx.recv().await;
-        assert_eq!(MainRecv::MyResponse, response);
+        assert_eq!(MainSend::MyResponse, response);
     }, 200);
 
     Ok(())
