@@ -1,4 +1,4 @@
-//! A subscription utility, which can maintain a subscription state, and generate unique identifiers for each new subscription.
+//! A subscription utility channel, which can maintain a subscription state, and generate unique identifiers for each new subscription.
 use super::Channel;
 use crate::{Bus, Service};
 pub use channel::{Receiver, Sender};

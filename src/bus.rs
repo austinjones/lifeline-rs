@@ -6,7 +6,7 @@ use crate::{
 
 use std::fmt::{Debug, Display};
 
-/// Attaches a channel to the [Bus](./trait.Bus.html), carrying Self as a message.
+/// Attaches a channel to the [Bus](./trait.Bus.html), carrying `Self` as a message.
 ///
 /// The Channel associated type should be the Sender of the channel which will carry this message.
 ///
@@ -14,7 +14,6 @@ use std::fmt::{Debug, Display};
 ///
 /// ## Example:
 /// ```
-/// use lifeline::lifeline_bus;
 /// use lifeline::prelude::*;
 /// use tokio::sync::mpsc;
 ///
@@ -61,8 +60,7 @@ pub trait Resource<Bus>: Storage + Debug + Send {}
 
 /// Stores and distributes channel endpoints ([Senders](./trait.Sender.html) and [Receivers](./trait.Receiver.html)), as well as [Resource](./trait.Resource.html) values.
 ///
-/// The bus allows you to write loosely-coupled applications, with adjacent lifeline [Services](./trait.Service.html)  that do not depend on each other,
-///  but can communicate with each other via shared message types.
+/// The bus allows you to write loosely-coupled applications, with adjacent lifeline [Services](./trait.Service.html) that do not depend on each other.
 ///
 /// Most Bus implementations are defined using the [lifeline_bus!](./macro.lifeline_bus.html) macro.
 ///
@@ -75,7 +73,7 @@ pub trait Resource<Bus>: Storage + Debug + Send {}
 pub trait Bus: Default + Debug + Sized {
     /// Configures the channel capacity, if the linked channel implementation takes a capacity during initialization
     ///
-    /// Returns an AlreadyLinkedError, if the channel has already been initalized from another call to `capacity`, `rx`, or `tx`.
+    /// Returns an [AlreadyLinkedError](./error/struct.AlreadyLinkedError.html), if the channel has already been initalized from another call to `capacity`, `rx`, or `tx`.
     ///
     /// ## Example:
     /// ```
@@ -100,7 +98,7 @@ pub trait Bus: Default + Debug + Sized {
 
     /// Takes (or clones) the channel [Receiver](./trait.Receiver.html).  The message type must implement [Message\<Bus\>](./trait.Message.html), which defines the channel type.
     ///
-    /// Returns the [Receiver](./trait.Receiver.html), or a `TakeChannelError` if the channel endpoint is not clonable, and has already been taken.
+    /// Returns the [Receiver](./trait.Receiver.html), or a [TakeChannelError](./error/enum.TakeChannelError.html) if the channel endpoint is not clonable, and has already been taken.
     ///
     /// - For `mpsc` channels, the Receiver is taken.
     /// - For `broadcast` channels, the Receiver is cloned.
@@ -131,7 +129,7 @@ pub trait Bus: Default + Debug + Sized {
 
     /// Takes (or clones) the channel [Sender](./trait.Sender.html).  The message type must implement [Message\<Bus\>](./trait.Message.html), which defines the channel type.
     ///
-    /// Returns the sender, or a `TakeChannelError` if the channel endpoint is not clonable, and has already been taken.
+    /// Returns the sender, or a [TakeChannelError](./error/enum.TakeChannelError.html) if the channel endpoint is not clonable, and has already been taken.
     ///
     /// - For `mpsc` channels, the Sender is cloned.
     /// - For `broadcast` channels, the Sender is cloned.
@@ -162,7 +160,7 @@ pub trait Bus: Default + Debug + Sized {
 
     /// Takes (or clones) the [Resource](./trait.Resource.html).
     ///
-    /// Returns the resource, or a `TakeResourceError` if the resource is not clonable, and has already been taken.
+    /// Returns the resource, or a [TakeResourceError](./error/enum.TakeResourceError.html) if the resource is not clonable, and has already been taken.
     ///
     /// ## Example:
     /// ```

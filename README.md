@@ -1,12 +1,20 @@
 # lifeline-rs
-Lifeline is a dependency injection library for message-based applications.
+Lifeline is a dependency injection library for message-based applications.  Lifeline produces applications which are:
+ - **Clean:** Bus implementations provide a high-level overview of the application, and services clearly define the messages they send and receive.
+ - **Decoupled:**  Services and tasks have no dependency on their peers, as they only depend on the message types they are sending or receiving.
+ - **Stoppable:** Services and tasks are trivially cancellable.  For example, you can terminate all tasks associated with a connection when a client disconnects.
+ - **Greppable:**  The impact/reach of a message can be easily understood by searching for the type in the source code.
+ - **Testable:**  Lifeline applications communicate via messages, which makes unit testing easy.  Create the bus, spawn the service, send a message, and expect an output message.
 
-Lifeline provides:
+In order to achieve these goals, lifeline provides patterns, traits, and implementations:
  - The Bus, which constructs & distributes channel Senders/Receivers, and Resources.
- - The Carrier, which drives messages between Busses.  Carriers are critical when building large applications.
- - The Service, which takes channels from the bus, and drives messages along the channels.
+ - The Carrier, which translates messages between two Bus instances.  Carriers are critical when building large applications, and help minimize the complexity of the messages on each bus.
+ - The Service, which takes channels from the bus, and spawns tasks which send and receive messages.
  - The Task, an async future which returns a lifeline when spawned.  When the lifeline is dropped, the future is immedately cancelled.
  - The Resource, a struct which can be stored in the bus, and taken (or cloned) when services spawn.
+
+For a quick overview, see the [hello.rs example.](https://github.com/austinjones/lifeline-rs/blob/master/examples/hello.rs).
+For a full-scale application see [tab-rs.](https://github.com/austinjones/tab-rs)
 
 ## Quickstart
 Lifeline uses `tokio` as it's default runtime.  Tokio provides a rich set of async channels.
@@ -22,8 +30,8 @@ lifeline = { version = "0.3", features = ["dyn-bus", "async-std-executor", "asyn
 ## The Bus
 The bus carries channels and resources.  When services spawn, they receive a reference to the bus.
 
-Channels can be taken from the bus.  If the channel endpoint implements is clonable, it will remain available for other service.  
-But if the channel is `!Clone`, future calls will get an `Err`.  The Rx/Tx type parameters are type-safe, and will produce a compile error
+Channels can be taken from the bus.  If the channel endpoint is clonable, it will remain available for other services.  
+If the channel is not clonable, future calls will receive an `Err` value.  The Rx/Tx type parameters are type-safe, and will produce a compile error
 if you attempt to take a channel for an message type which the bus does not carry.
 
 ```rust
@@ -100,7 +108,7 @@ Carriers allow each bus can define messages that minimally represent the informa
 
 Carriers centralize the communication between busses, making large applications easier to reason about.
 
-### Implementation
+### Carrier Example
 Busses deeper in the tree should implement `FromCarrier` for their parents.
 
 ```rust
@@ -142,10 +150,9 @@ One note about ownership.  The `CarryFrom` / `CarryInto` traits do not consume t
 can take Senders/Receivers that are `!Clone`.  So they do consume resources, and are named `From`/`Into`.
 
 ## The Service
-The Service takes channel endpoints from the bus, and spawns tasks.  
+The Service takes channels from the Bus, and spawns a tree of tasks (which send & receive messages).  Returns one or more Lifeline values.  When the Lifeline is dropped, the task tree is immediately cancelled.
 
-Taking channel endpoints and resources is fallible.  This is because, depending on the channel type, the endpoint may not be clonable.
-Lifeline clones endpoints when it can (mpsc::Sender, broadcast::*, and watch::Receiver).  Other endpoints are taken, removed, and future calls will return an Err.
+It's common for `Service::spawn` to return a Result.  Taking channel endpoints is a fallible operation.  This is because, depending on the channel type, the endpoint may not be clonable.  Lifeline clones endpoints when it can (mpsc::Sender, broadcast::*, and watch::Receiver).  Other endpoints are taken, removed, and future calls will return an Err.
 
 The structure of `spawn` makes errors occur predictable and early.  If you get an `Err` on an `mpsc::Receiver`, change it's binding in the bus to `broadcast`.
 
@@ -197,6 +204,7 @@ Self::try_task("greet", async move {
 Note that the return type of the async closure is `anyhow::Result<T>`.  Requiring anyhow really simplifies the type inference on the task.
 There is no need to infer an Err type, and the async block can return many types of `Err` with `?`.
 
+# The Details
 ### Logging
 Tasks (via [log](https://docs.rs/log/0.4.11/log/)) provide debug logs when the are started, ended, or cancelled.
 

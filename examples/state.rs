@@ -146,7 +146,7 @@ mod state {
 mod bus {
     use crate::message::{MainRecv, TravelEvent};
     use crate::state::SkyState;
-    use lifeline::{lifeline_bus, Message};
+    use lifeline::prelude::*;
     use tokio::sync::{broadcast, mpsc, watch};
 
     lifeline_bus!(pub struct StateBus);

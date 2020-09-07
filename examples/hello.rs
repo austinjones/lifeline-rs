@@ -99,7 +99,7 @@ mod message {
 ///   or structs required for initialization.
 mod bus {
     use crate::message::{ExampleRecv, ExampleSend};
-    use lifeline::{lifeline_bus, Message};
+    use lifeline::prelude::*;
     use tokio::sync::mpsc;
 
     // This is a macro that generates an ExampleBus struct,

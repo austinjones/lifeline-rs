@@ -88,7 +88,7 @@ where
 /// Bus types form a tree, with a 'root application' bus, and multiple busses focused on particular domains.  This structure provides isolation,
 /// and predictable failures when [Services](./trait.Service.html) spawn.
 /// ```text
-/// - Main
+/// - MainBus
 ///   | ListenerBus
 ///   |  | ConnectionBus
 ///   | DomainSpecificBus
@@ -148,7 +148,7 @@ pub trait CarryFrom<FromBus: Bus>: Bus + Task + Sized {
     fn carry_from(&self, from: &FromBus) -> Self::Lifeline;
 }
 
-/// The receprocial of the `CarryFrom` trait.  Implemented for all types on which `CarryFrom `is implemented.
+/// The receprocial of the [CarryFrom](./trait.CarryFrom.html) trait.  Implemented for all types on which [CarryFrom](./trait.CarryFrom.html) is implemented.
 pub trait CarryInto<IntoBus: Bus>: Bus + Task + Sized {
     /// The carrier lifeline.  When dropped, all spawned tasks are immediately cancelled.
     type Lifeline;
@@ -188,7 +188,7 @@ pub trait DefaultCarrier<FromBus: Bus>: CarryFrom<FromBus> {
 /// - `tokio-executor`
 /// - `async-std-executor`
 ///
-/// Fallible tasks can be invoked with `Self::try_task`.  Lifeline will log OK/ERR status when the task finishes.
+/// Fallible tasks can be invoked with [Self::try_task](./trait.Task.html#method.try_task).  Lifeline will log OK/ERR status when the task finishes.
 ///
 /// # Example
 /// ```
