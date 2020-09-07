@@ -1,19 +1,19 @@
 # lifeline-rs
 Lifeline is a dependency injection library for message-based applications.  Lifeline produces applications which are:
  - **Clean:** Bus implementations provide a high-level overview of the application, and services clearly define the messages they send and receive.
- - **Decoupled:**  Services and tasks have no dependency on their peers, as they only depend on the message types they are sending or receiving.
+ - **Decoupled:**  Services and tasks have no dependency on their peers, as they only depend on the message types they send and receive.
  - **Stoppable:** Services and tasks are trivially cancellable.  For example, you can terminate all tasks associated with a connection when a client disconnects.
  - **Greppable:**  The impact/reach of a message can be easily understood by searching for the type in the source code.
  - **Testable:**  Lifeline applications communicate via messages, which makes unit testing easy.  Create the bus, spawn the service, send a message, and expect an output message.
 
 In order to achieve these goals, lifeline provides patterns, traits, and implementations:
- - The Bus, which constructs & distributes channel Senders/Receivers, and Resources.
- - The Carrier, which translates messages between two Bus instances.  Carriers are critical when building large applications, and help minimize the complexity of the messages on each bus.
- - The Service, which takes channels from the bus, and spawns tasks which send and receive messages.
- - The Task, an async future which returns a lifeline when spawned.  When the lifeline is dropped, the future is immedately cancelled.
- - The Resource, a struct which can be stored in the bus, and taken (or cloned) when services spawn.
+ - The **Bus**, which constructs & distributes channel Senders/Receivers, and Resources.
+ - The **Carrier**, which translates messages between two Bus instances.  Carriers are critical when building large applications, and help minimize the complexity of the messages on each bus.
+ - The **Service**, which takes channels from the bus, and spawns tasks which send and receive messages.
+ - The **Task**, an async future which returns a lifeline when spawned.  When the lifeline is dropped, the future is immedately cancelled.
+ - The **Resource**, a struct which can be stored in the bus, and taken (or cloned) when services spawn.
 
-For a quick overview, see the [hello.rs example.](https://github.com/austinjones/lifeline-rs/blob/master/examples/hello.rs).
+For a quick introduction, see the [hello.rs example.](https://github.com/austinjones/lifeline-rs/blob/master/examples/hello.rs)
 For a full-scale application see [tab-rs.](https://github.com/austinjones/tab-rs)
 
 ## Quickstart
@@ -30,21 +30,10 @@ lifeline = { version = "0.3", features = ["dyn-bus", "async-std-executor", "asyn
 ## The Bus
 The bus carries channels and resources.  When services spawn, they receive a reference to the bus.
 
-Channels can be taken from the bus.  If the channel endpoint is clonable, it will remain available for other services.  
-If the channel is not clonable, future calls will receive an `Err` value.  The Rx/Tx type parameters are type-safe, and will produce a compile error
+Channels can be taken from the bus.  If the channel endpoint is clonable, it will remain available for other services.  If the channel is not clonable, future calls will receive an `Err` value.  The Rx/Tx type parameters are type-safe, and will produce a compile error
 if you attempt to take a channel for an message type which the bus does not carry.
 
-```rust
-lifeline_bus!(pub struct MainBus);
-
-let rx = bus.rx::<MessageType>()?;
-```
-
-Here is a full example where:
-- a bus is constructed, 
-- a sender is taken, 
-- and a message is sent.
-
+### Bus Example
 ```rust
 use lifeline::lifeline_bus;
 use lifeline::Message;
@@ -73,71 +62,26 @@ fn use_bus() -> anyhow::Result<()> {
 }
 ```
 
-The bus should be short-lived in the lifecycle of your application (i.e. drop it once your Main service has spawned).
-This provides you with accurate 'channel disconnected' errors.
-
-### A note about autocomplete
-`rust-analyzer` does not currently support auto-import for structs defined in macros.  Lifeline really needs the
-struct defined in the macro, as it injects magic fields which store the channels at runtime.
-
-There is a workaround: define a `prelude.rs` file in your crate root that exports `pub use` for all your bus implementations.  
-```
-pub use lifeline::*;
-pub use crate::bus::MainBus;
-pub use crate::other::OtherBus;
-...
-```
-Then in all your modules:
-`use crate::prelude::*`
-
 ## The Carrier
 Carriers provide a way to move messages between busses.  Carriers can translate, ignore, or collect information,
 providing each bus with the messages that it needs.
 
 Large applications have a tree of Busses.  This is good, it breaks your app into small chunks.
 ```
-- Main
+- MainBus
   | ConnectionListenerBus
   |  | ConnectionBus
   | DomainSpecificBus
   |  | ...
 ```
- They prevent an explosion of channel endpoints that are copied to all busses.
 
-Carriers allow each bus can define messages that minimally represent the information it's services need to function.
+Carriers allow each bus to define messages that minimally represent the information it's services need to function, and prevent an explosion of messages which are copied to all busses.
 
 Carriers centralize the communication between busses, making large applications easier to reason about.
 
 ### Carrier Example
-Busses deeper in the tree should implement `FromCarrier` for their parents.
+Busses deeper in the tree should implement `FromCarrier` for their parents - see the [carrier.rs example](https://github.com/austinjones/lifeline-rs/blob/master/examples/carrier.rs) for more details.
 
-```rust
-impl FromCarrier<MainBus> for ConnectionListenerBus {
-    // if you only need one task, you can return Lifeline
-    // if you need many tasks, you can return a struct like services do.
-
-    type Lifeline = anyhow::Result<Lifeline>;
-    fn carry_from(&self, from: &MainBus) -> Self::Lifeline {
-        let mut rx_main = from.rx::<SomeMainMessage>()?;
-        let mut tx_sub = self.tx::<SomeListenerMessage>()?;
-
-        let lifeline = Self::try_task("from_main", async move {
-            while let Some(msg) = rx_main.recv().await {
-                match msg {
-                    MainSend::HelloSubsurface => tx_sub.send(SubsurfaceSend::Hello {}).await?,
-                    _ => {}
-                }
-            }
-
-            Ok(())
-        });
-
-        Ok(lifeline)
-    }
-}
-```
-
-The carrier returns a lifeline.  When the lifeline is dropped, any tasks the carrier has spawned are immediately cancelled.
 ```rust
 let main_bus = MainBus::default();
 let connection_listener_bus = ConnectionListenerBus::default();
@@ -146,15 +90,10 @@ let _carrier = connection_listener_bus.carry_from(&main_bus)?;
 let _carrier = main_bus.carry_into(&main_bus)?;
 ```
 
-One note about ownership.  The `CarryFrom` / `CarryInto` traits do not consume the bus, as `std::convert::From` does.  But they
-can take Senders/Receivers that are `!Clone`.  So they do consume resources, and are named `From`/`Into`.
-
 ## The Service
-The Service takes channels from the Bus, and spawns a tree of tasks (which send & receive messages).  Returns one or more Lifeline values.  When the Lifeline is dropped, the task tree is immediately cancelled.
+The Service synchronously takes channels from the Bus, and spawns a tree of async tasks (which send & receive messages).  When spawned, the service returns one or more Lifeline values.  When a Lifeline is dropped, the associated task is immediately cancelled.
 
-It's common for `Service::spawn` to return a Result.  Taking channel endpoints is a fallible operation.  This is because, depending on the channel type, the endpoint may not be clonable.  Lifeline clones endpoints when it can (mpsc::Sender, broadcast::*, and watch::Receiver).  Other endpoints are taken, removed, and future calls will return an Err.
-
-The structure of `spawn` makes errors occur predictable and early.  If you get an `Err` on an `mpsc::Receiver`, change it's binding in the bus to `broadcast`.
+It's common for `Service::spawn` to return a Result.  Taking channel endpoints is a fallible operation.  This is because, depending on the channel type, the endpoint may not be clonable.  Lifeline clones endpoints when it can (`mpsc::Sender`, `broadcast::*`, and `watch::Receiver`).  Lifeline tries to make this happen as early as possible.
 
 ```rust
 use lifeline::{Service, Task};
@@ -179,7 +118,7 @@ impl Service for ExampleService {
 ```
 
 ## The Task
-The Task executes a `Future`, and returns a Lifeline when spawned.  When the lifeline is dropped, the future is immediately cancelled.
+The Task executes a `Future`, and returns a `Lifeline` value when spawned.  When the lifeline is dropped, the future is immediately cancelled.
 
 `Task` is a trait that is implemented for all types - you can import it and use `Self::task` in any type.  In lifeline, it's 
 most commonly used in Service implementations.
@@ -191,7 +130,7 @@ Self::task("greet", async move {
 })
 ```
 
-Or, if you have a fallible task:
+Or, if you have a fallible task, you can return `anyhow::Result<T>`.  Anyhow is required to solve type inference issues.
 
 ```rust
 Self::try_task("greet", async move {
@@ -201,8 +140,38 @@ Self::try_task("greet", async move {
 })
 ```
 
-Note that the return type of the async closure is `anyhow::Result<T>`.  Requiring anyhow really simplifies the type inference on the task.
-There is no need to infer an Err type, and the async block can return many types of `Err` with `?`.
+# Testing
+One of the goals of Lifeline is to provide interfaces that are very easy to test.  Lifeline runtimes are easy to construct in tests:
+
+```rust
+#[tokio::test]
+async fn test() -> anyhow::Result<()> {
+    // this is zero-cost.  channel construction is lazy.
+    let bus = MainBus::default();
+    let service = MainService::spawn(&bus)?;
+
+    // the service took `bus.rx::<MainSend>()`
+    //                + `bus.tx::<MainRecv>()`
+    // let's communicate using channels we take.
+    let tx = bus.tx::<MainSend>()?;
+    let rx = bus.rx::<MainRecv>()?;
+
+    // drop the bus, so that any 'channel closed' errors will occur during our test.
+    // this would likely happen in practice during the long lifetime of the program
+    drop(bus);
+
+    tx.send(MainSend::MyMessage)?;
+
+    // wait up to 200ms for the message to arrive
+    // if we remove the 200 at the end, the default is 50ms
+    lifeline::assert_completes!(async move {
+        let response = rx.recv().await;
+        assert_eq!(MainRecv::MyResponse, response);
+    }, 200);
+
+    Ok(())
+}
+```
 
 # The Details
 ### Logging
@@ -234,6 +203,20 @@ If the task is started using `Task::try_task`, the `Ok`/`Err` value will be prin
 2020-08-23 16:45:10,422 ERROR [lifeline::service] ERR: ExampleService/err_task: my error
 2020-08-23 16:45:10,422 DEBUG [lifeline::spawn] END ExampleService/err_task
 ```
+
+### A note about autocomplete
+`rust-analyzer` does not currently support auto-import for structs defined in macros.  Lifeline really needs the
+struct defined in the macro, as it injects magic fields which store the channels at runtime.
+
+There is a workaround: define a `prelude.rs` file in your crate root that exports `pub use` for all your bus implementations.  
+```
+pub use lifeline::*;
+pub use crate::bus::MainBus;
+pub use crate::other::OtherBus;
+...
+```
+Then in all your modules:
+`use crate::prelude::*`
 
 ## The Resource
 Resources can be stored on the bus.  This is very useful for configuration (e.g `MainConfig`), or connections (e.g. a `TcpStream`).
@@ -287,44 +270,3 @@ impl_channel_take!(mpsc::Receiver<T>);
 ```
 
 Broadcast senders should implement the trait with the `clone_rx` method overriden, to take from `Rx`, then subscribe to `Tx`.
-
-# Testing
-One of the goals of Lifeline is to provide interfaces that are very easy to test.  Lifeline runtimes are easy to construct in tests:
-
-```rust
-#[tokio::test]
-async fn test() -> anyhow::Result<()> {
-    // this is zero-cost.  channel construction is lazy.
-    let bus = MainBus::default();
-    let service = MainService::spawn(&bus)?;
-
-    // the service took `bus.rx::<MainSend>()`
-    //                + `bus.tx::<MainRecv>()`
-    // let's communicate using channels we take.
-    let tx = bus.tx::<MainSend>()?;
-    let rx = bus.rx::<MainRecv>()?;
-
-    // drop the bus, so that any 'channel closed' errors will occur during our test.
-    // this would likely happen in practice during the long lifetime of the program
-    drop(bus);
-
-    tx.send(MainSend::MyMessage)?;
-
-    // wait up to 200ms for the message to arrive
-    // if we remove the 200 at the end, the default is 50ms
-    lifeline::assert_completes!(async move {
-        let response = rx.recv().await;
-        assert_eq!(MainRecv::MyResponse, response);
-    }, 200);
-
-    Ok(())
-}
-```
-
-## A note on assert_completes!
-`assert_completes!` is really critical.  The problem with testing against channels is that one thing we need to test is
- 'does a message ever arrive?'.
-
-If we immediately `try_recv` for a message, there may be asynchronous tasks within the MainService (or the services that it spawns) that haven't caught up.  The only way to do this is with a timeout.
-
-The upside is, in the success case (a message did arrive), we don't have to pay the timeout cost.  As soon as it arrives, the test passes and terminates.
