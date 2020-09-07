@@ -20,13 +20,13 @@
 //! ```
 //!
 //! ## The Bus
-//! The [Bus](./trait.Bus.html) carries channels and resources, and allows you to write loosely coupled [Service](./trait.Service.html) implementations, which communicate over messages.
+//! The [Bus](./trait.Bus.html) carries channels and resources, and allows you to write loosely coupled [Service](./trait.Service.html) implementations which communicate over messages.
 //!
-//! Channels can be taken from the bus. If the channel endpoint is clonable, it will remain available for other service.
+//! Channels can be taken from the bus. If the channel endpoint is clonable, it will remain available for other services.
 //! But if the channel is `!Clone`, future calls will return an Err. The Rx/Tx type parameters are type-safe,
 //! and will produce a compile error if you attempt to take a channel for an message type which the bus does not carry.
 //!
-//! Lifeline provides a [lifeline_bus!](macro.lifeline_bus.html) macro which stores channels and resources in Box<dyn> slots:
+//! Lifeline provides a [lifeline_bus!](macro.lifeline_bus.html) macro which stores channels and resources in `Box<dyn>` slots:
 //! ```
 //! use lifeline::lifeline_bus;
 //! lifeline_bus!(pub struct MainBus);
@@ -44,7 +44,7 @@
 //!   | DomainSpecificBus
 //!   |  | ...
 //! ```
-//! [Carriers](./trait.CarryFrom.html) allow each bus can define messages that minimally represent the information it's services need to function.
+//! [Carriers](./trait.CarryFrom.html) allow each bus to define messages that minimally represent the information it's services need to function.
 //!
 //! [Carriers](./trait.CarryFrom.html) centralize the communication between busses, making large applications easier to reason about.
 //!
@@ -52,9 +52,9 @@
 //! The [Service](./trait.Service.html) takes channel endpoints from the bus, and spawns tasks.
 //!
 //! Taking channel endpoints and resources is fallible. Depending on the channel type, the endpoint may not be clonable.
-//! Lifeline clones endpoints when it can (e.g. for mpsc::Sender, broadcast::*, and watch::Receiver). Other endpoints are taken, removed, and future calls will return an Err.
+//! Lifeline clones endpoints when it can (e.g. for `mpsc::Sender`, `broadcast::*`, and `watch::Receiver`). Other endpoints are taken, removed, and future calls will return an Err.
 //!
-//! The structure of spawn makes errors occur predictable and early. If you get an Err on an mpsc::Receiver,
+//! [Service::spawn](./trait.Service.html#tymethod.spawn) takes channels from the bus synchronously, which makes errors occur predictably and early. If you get an Err on an mpsc::Receiver,
 //! change it's binding in the bus to broadcast.
 //!
 //! ## The Task

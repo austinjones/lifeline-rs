@@ -37,7 +37,7 @@ pub trait Message<Bus>: Debug {
     type Channel: Channel;
 }
 
-/// Attaches a resource to the [Bus](./trait.Bus.html).  This resource can accessed from the bus using [bus.resource::<Self>()](trait.Bus.html#tymethod.resource).
+/// Attaches a resource to the [Bus](./trait.Bus.html).  This resource can accessed from the bus using [bus.resource::\<Self\>()](trait.Bus.html#tymethod.resource).
 ///
 /// The resource must implement [Storage](./trait.Storage.html), which describes whether the resource is taken or cloned.
 ///
@@ -59,7 +59,7 @@ pub trait Message<Bus>: Debug {
 /// ```
 pub trait Resource<Bus>: Storage + Debug + Send {}
 
-/// A store and distributor of channel endpoints ([Senders](./trait.Sender.html) and [Receivers](./trait.Receiver.html)), as well as [Resource](./trait.Resource.html) values.
+/// Stores and distributes channel endpoints ([Senders](./trait.Sender.html) and [Receivers](./trait.Receiver.html)), as well as [Resource](./trait.Resource.html) values.
 ///
 /// The bus allows you to write loosely-coupled applications, with adjacent lifeline [Services](./trait.Service.html)  that do not depend on each other,
 ///  but can communicate with each other via shared message types.

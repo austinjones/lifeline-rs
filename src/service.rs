@@ -6,7 +6,7 @@ use log::{debug, error};
 use std::future::Future;
 use std::{any::TypeId, fmt::Debug};
 
-/// A tree of tasks, which spawns on a [Bus](./trait.Bus.html), and returns one or more [Lifeline](./struct.Lifeline.html) values.  
+/// Takes channels from the [Bus](./trait.Bus.html), and spawns a tree of tasks.  Returns one or more [Lifeline](./struct.Lifeline.html) values.  
 /// When the [Lifeline](./struct.Lifeline.html) is dropped, the task tree is immediately cancelled.
 ///
 /// - Simple implementations can return the [Lifeline](./struct.Lifeline.html) value, a handle returned by [Task::task](./trait.Task.html#method.task).
@@ -60,6 +60,9 @@ pub trait Service: Task {
     /// The service lifeline.  When dropped, all spawned tasks are immediately cancelled.
     type Lifeline;
 
+    /// Spawns the service with all sub-tasks, and returns a lifeline value.  When the lifeline is dropped, all spawned tasks are immediately cancelled.
+    ///
+    /// Implementations should synchronously take channels from the bus, and then use them asynchronously.  This makes errors occur as early and predictably as possible.
     fn spawn(bus: &Self::Bus) -> Self::Lifeline;
 }
 
@@ -80,7 +83,7 @@ where
     }
 }
 
-/// The Carrier, a variant of the [Service](./trait.Service.html) which drives messages between two bus instances.
+/// Carries messages between **two** bus instances. A variant of the [Service](./trait.Service.html).
 ///
 /// Bus types form a tree, with a 'root application' bus, and multiple busses focused on particular domains.  This structure provides isolation,
 /// and predictable failures when [Services](./trait.Service.html) spawn.
@@ -179,8 +182,7 @@ pub trait DefaultCarrier<FromBus: Bus>: CarryFrom<FromBus> {
     }
 }
 
-/// A trait implemented for all types which spawns lifeline tasks.
-/// Typically, this would be invoked when a service is spawned.
+/// Provides the [Self::task](./trait.Task.html#method.task) and [Self::try_task](./trait.Task.html#method.try_task) associated methods for all types.
 ///
 /// Lifeline supports the following task executors (using feature flags), and will use the first enabled flag:
 /// - `tokio-executor`
