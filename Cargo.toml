@@ -1,6 +1,6 @@
 [package]
 name = "lifeline"
-version = "0.3.1"
+version = "0.3.2"
 description = "Lifeline is a dependency injection library for asynchronous message-based applications."
 keywords = ["async", "tokio", "async", "actor", "actors"]
 categories = ["asynchronous", "rust-patterns", "web-programming"]

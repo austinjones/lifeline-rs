@@ -12,7 +12,7 @@
 //! - The [Task](./trait.Task.html), an async future which returns a lifeline when spawned. When the lifeline is dropped, the future is immedately cancelled.
 //! - The [Resource](./trait.Resource.html), a struct which can be stored in the bus, and taken (or cloned) when services spawn.
 //!
-//! For a quick overview, see the [hello.rs example.](https://github.com/austinjones/lifeline-rs/blob/master/examples/hello.rs)
+//! For a quick introduction, see the [hello.rs example.](https://github.com/austinjones/lifeline-rs/blob/master/examples/hello.rs)
 //! For a full-scale application see [tab-rs.](https://github.com/austinjones/tab-rs)
 //!
 //! ## Quickstart
@@ -51,13 +51,13 @@
 //!   | DomainSpecificBus
 //!   |  | ...
 //! ```
-//! [Carriers](./trait.CarryFrom.html) allow each bus to define messages that minimally represent the information it's services need to function.
+//! [Carriers](./trait.CarryFrom.html) allow each bus to define messages that minimally represent the information it's services need to function, and prevent an explosion of messages which are copied to all busses.
 //!
 //! [Carriers](./trait.CarryFrom.html) centralize the communication between busses, making large applications easier to reason about.
 //!
 //! ## The Service
-//! The [Service](./trait.Service.html) takes channels from the [Bus](./trait.Bus.html), and spawns a tree of tasks (which send & receive messages).
-//! Returns one or more [Lifeline](./struct.Lifeline.html) values.  When the [Lifeline](./struct.Lifeline.html) is dropped, the task tree is immediately cancelled.
+//! The [Service](./trait.Service.html) synchronously takes channels from the [Bus](./trait.Bus.html), and spawns a tree of async tasks (which send & receive messages).
+//! When spawned, the service returns one or more [Lifeline](./struct.Lifeline.html) values.  When a [Lifeline](./struct.Lifeline.html) is dropped, the associated task is immediately cancelled.
 //!
 //! It's common for [Service::spawn](./trait.Service.html#tymethod.spawn) to return a Result.  Taking channel endpoints is a fallible operation.  Depending on the channel type, the endpoint may not be clonable.
 //! Lifeline clones endpoints when it can (e.g. for `mpsc::Sender`, `broadcast::*`, and `watch::Receiver`).  Other endpoints are taken, removed, and future calls will return an Err.
