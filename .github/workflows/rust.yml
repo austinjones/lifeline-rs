@@ -29,7 +29,7 @@ jobs:
           toolchain: stable
           components: clippy
           override: true
-          
+
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -81,7 +81,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --example async-std --no-default-features --features "dyn-bus async-std-executor async-std-channels"
+          args: --example async-std --no-default-features --features "dyn-bus async-std-executor async-std-channels async-std-attributes"
 
       - name: example | carrier
         uses: actions-rs/cargo@v1
