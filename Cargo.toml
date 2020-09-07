@@ -1,7 +1,7 @@
 [package]
 name = "lifeline"
 version = "0.3.1"
-description = "Lifeline is a dependency injection library for message-based applications."
+description = "Lifeline is a dependency injection library for asynchronous message-based applications."
 keywords = ["async", "tokio", "async", "actor", "actors"]
 categories = ["asynchronous", "rust-patterns", "web-programming"]
 readme = "README.md"
@@ -11,6 +11,9 @@ homepage = "https://github.com/austinjones/lifeline-rs"
 repository = "https://github.com/austinjones/lifeline-rs"
 edition = "2018"
 license = "MIT"
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 [dependencies]
 pin-project = "0.4.23"
