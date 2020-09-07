@@ -6,6 +6,9 @@ keywords = ["async", "tokio", "async", "actor", "actors"]
 categories = ["asynchronous", "rust-patterns", "web-programming"]
 readme = "README.md"
 authors = ["Austin Jones <implAustin@gmail.com>"]
+documentation = "https://docs.rs/lifeline/"
+homepage = "https://github.com/austinjones/lifeline-rs"
+repository = "https://github.com/austinjones/lifeline-rs"
 edition = "2018"
 license = "MIT"
 
