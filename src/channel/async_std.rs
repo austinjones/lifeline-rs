@@ -1,9 +1,8 @@
 use super::Channel;
 use crate::error::SendError as LifelineSendError;
-use crate::{error::type_name, impl_channel_clone, impl_channel_take};
+use crate::{impl_channel_clone, impl_channel_take};
 use async_std::sync::{channel, Receiver, Sender};
 use async_trait::async_trait;
-use log::debug;
 use std::fmt::Debug;
 
 impl<T: Send + 'static> Channel for Sender<T> {

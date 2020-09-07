@@ -6,12 +6,10 @@ use bus::ExampleBus;
 use lifeline::prelude::*;
 use message::{ExampleRecv, ExampleSend};
 use service::ExampleService;
-use simple_logger::SimpleLogger;
+use std::time::Duration;
 
 #[async_std::main]
 pub async fn main() -> anyhow::Result<()> {
-    SimpleLogger::new().init().expect("log init failed");
-
     let bus = ExampleBus::default();
     let _service = ExampleService::spawn(&bus)?;
 
@@ -32,6 +30,9 @@ pub async fn main() -> anyhow::Result<()> {
     println!("Service says {:?}", aww_ok.unwrap());
 
     println!("All done.");
+
+    // For some reason, async_std panics due to printlns on shutdown
+    async_std::task::sleep(Duration::from_millis(100)).await;
 
     Ok(())
 }
