@@ -2,13 +2,14 @@ use bus::ExampleBus;
 use lifeline::prelude::*;
 use message::{ExampleRecv, ExampleSend};
 use service::ExampleService;
+use simple_logger::SimpleLogger;
 
 /// Spawn a simple bus, and a service
 /// The service execution is tied to the 'lifeline' it returns
 /// If `service` is dropped, all it's tasks are cancelled.
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    simple_logger::init().expect("log init failed");
+    SimpleLogger::new().init().expect("log init failed");
 
     // Bus construction is immediate, parameterless, and infallible.
     // All busses implement Default.

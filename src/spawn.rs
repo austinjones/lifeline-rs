@@ -1,5 +1,6 @@
-use futures::{task::AtomicWaker, Future};
+use futures_util::task::AtomicWaker;
 use std::fmt::Debug;
+use std::future::Future;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -13,6 +14,11 @@ use log::debug;
 use pin_project::pin_project;
 
 /// Executes the task, until the future completes, or the lifeline is dropped
+///
+/// If the `tokio-executor` feature is enabled, then it is used to spawn the task
+///
+/// Otherwise, if the `async-std-executor` feature is enabled, then it is used to spawn the task
+#[allow(unreachable_code)]
 pub(crate) fn spawn_task<O>(name: String, fut: impl Future<Output = O> + Send + 'static) -> Lifeline
 where
     O: Debug + Send + 'static,
@@ -20,17 +26,27 @@ where
     let inner = Arc::new(LifelineInner::new());
 
     let service = LifelineFuture::new(name, fut, inner.clone());
-    spawn_task_inner(service);
 
-    Lifeline::new(inner)
+    #[cfg(feature = "tokio-executor")]
+    {
+        spawn_task_tokio(service);
+        return Lifeline::new(inner);
+    }
+
+    #[cfg(feature = "async-std-executor")]
+    {
+        spawn_task_async_std(service);
+        return Lifeline::new(inner);
+    }
 }
 
 pub(crate) fn task_name<S>(name: &str) -> String {
     type_name::<S>().to_string() + "/" + name
 }
 
-// #[cfg(feature = "tokio-executor")]
-fn spawn_task_inner<F, O>(task: F)
+/// Spawns a task using the tokio executor
+#[cfg(feature = "tokio-executor")]
+fn spawn_task_tokio<F, O>(task: F)
 where
     F: Future<Output = O> + Send + 'static,
     O: Send + 'static,
@@ -38,6 +54,19 @@ where
     tokio::spawn(task);
 }
 
+/// Spawns a task using the async-std executor
+#[cfg(feature = "async-std-executor")]
+fn spawn_task_async_std<F, O>(task: F)
+where
+    F: Future<Output = O> + Send + 'static,
+    O: Send + 'static,
+{
+    async_std::task::spawn(task);
+}
+
+/// A future which wraps another future, and immediately returns Poll::Ready if the associated lifeline handle has been dropped.
+///
+/// This is the critical component of the lifeline library, which allows the transparent & immediate cancelleation of entire Service trees.
 #[pin_project]
 struct LifelineFuture<F: Future> {
     #[pin]
@@ -95,6 +124,24 @@ where
     }
 }
 
+/// A lifeline value, associated with a future spawned via the `Task` trait.  When the lifeline is dropped, the associated future is immediately cancelled.
+///
+/// Lifeline values can be combined into structs, and represent trees of cancellable tasks.
+///
+/// Example:
+/// ```
+/// use lifeline::Task;
+/// use lifeline::Lifeline;
+///
+/// struct ExampleService {}
+/// impl ExampleService {
+///     fn my_method() -> Lifeline {
+///         Self::task("my_method", async move {
+///             // some impl
+///         })
+///     }
+/// }
+/// ```
 #[derive(Debug)]
 #[must_use = "if unused the service will immediately be cancelled"]
 pub struct Lifeline {

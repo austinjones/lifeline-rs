@@ -1,3 +1,4 @@
+//! A subscription utility, which can maintain a subscription state, and generate unique identifiers for each new subscription.
 use super::Channel;
 use crate::{Bus, Service};
 pub use channel::{Receiver, Sender};
@@ -69,6 +70,7 @@ mod channel {
     use std::{fmt::Debug, hash::Hash, sync::Arc};
     use tokio::sync::{mpsc, watch};
 
+    /// A sender which takes `Subscription::Subscribe(id)` and `Subscription::Unsubscribe(id)` messages
     #[derive(Debug)]
     pub struct Sender<T> {
         tx: mpsc::Sender<Subscription<T>>,
@@ -127,12 +129,8 @@ mod channel {
         }
     }
 
-    // impl<T: Send + 'static> crate::Storage for Sender<T> {
-    //     fn take_or_clone(res: &mut Option<Self>) -> Option<Self> {
-    //         Self::clone_slot(res)
-    //     }
-    // }
-
+    /// A receiver which provides `SubscriptionState` messages.  Returns immediately on the first `recv()`, and then waits for subscription updates.
+    /// Also provides `.contains(id)` and `.get_identifier(id)` utility methods, which are non-blocking.
     #[derive(Debug)]
     pub struct Receiver<T> {
         rx: watch::Receiver<SubscriptionState<T>>,
@@ -145,10 +143,12 @@ mod channel {
     }
 
     impl<T: Hash + Eq> Receiver<T> {
+        /// Returns true if the subscription channel is currently subscribed to the given identifier
         pub fn contains(&self, id: &T) -> bool {
             self.rx.borrow().contains(id)
         }
 
+        /// Returns a unique index for the subscription on the given identifier, or None if the channel is not subscribed to the identifier.
         pub fn get_identifier(&self, id: &T) -> Option<usize> {
             self.rx.borrow().get(id)
         }
@@ -161,6 +161,7 @@ mod channel {
     }
 
     impl<T: Hash + Eq + Clone> Receiver<T> {
+        #[allow(dead_code)]
         fn iter(&self) -> impl Iterator<Item = T> {
             let items = self.rx.borrow().subscriptions.clone();
             items.into_iter().map(|(k, _v)| k)
@@ -191,22 +192,26 @@ mod channel {
 mod messages {
     use std::{collections::HashMap, hash::Hash};
 
+    /// Subscribes, or unsubscribes to the given identifier
     #[derive(Debug, Clone)]
     pub enum Subscription<T> {
         Subscribe(T),
         Unsubscribe(T),
     }
 
+    /// Represents the current subscription state of the channel.
     #[derive(Clone, Debug)]
     pub struct SubscriptionState<T> {
         pub subscriptions: HashMap<T, usize>,
     }
 
     impl<T: Hash + Eq> SubscriptionState<T> {
+        /// Returns true if the subscription channel is currently subscribed to the given identifier
         pub fn contains(&self, id: &T) -> bool {
             self.subscriptions.contains_key(id)
         }
 
+        /// Returns a unique index for the subscription on the given identifier, or None if the channel is not subscribed to the identifier.
         pub fn get(&self, id: &T) -> Option<usize> {
             self.subscriptions.get(id).copied()
         }

@@ -13,12 +13,21 @@ use std::{
     marker::PhantomData,
     sync::{RwLock, RwLockWriteGuard},
 };
+/// Dynamic bus storage based on trait object slots, for Senders, Receivers, and Resources.
+///
+/// Most values are stored as `HashMap<TypeId, BusSlot>`
 #[derive(Debug)]
 pub struct DynBusStorage<B> {
     state: RwLock<DynBusState>,
     _bus: PhantomData<B>,
 }
 
+/// The internal state for:
+/// - channels, a set of message TypeIds for which the channel has been linked
+/// - capacity, the map from messageTypeId to the overriden channel capacity
+/// - tx, the map from message TypeId to the channel sender
+/// - rx, the map from message TypeId to the channel receiver
+/// - resource, the map from resource TypeId to the resource value
 #[derive(Debug)]
 struct DynBusState {
     pub(crate) channels: HashSet<TypeId>,
@@ -39,6 +48,7 @@ impl Default for DynBusState {
         }
     }
 }
+
 impl<B: Bus> Default for DynBusStorage<B> {
     fn default() -> Self {
         DynBusStorage {
@@ -49,6 +59,7 @@ impl<B: Bus> Default for DynBusStorage<B> {
 }
 
 impl<B: Bus> DynBusStorage<B> {
+    /// Links a channel on the bus, locking the state and inserting BusSlots for the sender/receiver pair
     pub fn link_channel<Msg, Bus>(&self)
     where
         Msg: Message<B> + 'static,
@@ -72,6 +83,8 @@ impl<B: Bus> DynBusStorage<B> {
         }
     }
 
+    /// Takes or clones the channel receiver, using the `Channel` trait implementation.
+    /// Returns an error if the endpoint cannot be taken.
     pub fn clone_rx<Msg, Bus>(&self) -> Result<<Msg::Channel as Channel>::Rx, TakeChannelError>
     where
         Msg: Message<B> + 'static,
@@ -98,6 +111,8 @@ impl<B: Bus> DynBusStorage<B> {
             .ok_or_else(|| TakeChannelError::already_taken::<Bus, Msg>(Link::Rx))
     }
 
+    /// Takes or clones the channel sender, using the `Channel` trait implementation.
+    /// Returns an error if the endpoint cannot be taken.
     pub fn clone_tx<Msg, Bus>(&self) -> Result<<Msg::Channel as Channel>::Tx, TakeChannelError>
     where
         Msg: Message<B> + 'static,
@@ -119,6 +134,8 @@ impl<B: Bus> DynBusStorage<B> {
             .ok_or_else(|| TakeChannelError::already_taken::<Bus, Msg>(Link::Tx))
     }
 
+    /// Takes or clones the resource, using the `Storage` trait implementation.
+    /// Returns an error if the resource cannot be taken.
     pub fn clone_resource<Res>(&self) -> Result<Res, TakeResourceError>
     where
         Res: Resource<B> + 'static,
@@ -135,6 +152,7 @@ impl<B: Bus> DynBusStorage<B> {
             .ok_or_else(|| TakeResourceError::taken::<Self, Res>())
     }
 
+    /// Stores the resource on the bus, overwriting it if it already exists
     pub fn store_resource<Res: Send + 'static, Bus>(&self, value: Res) {
         let id = TypeId::of::<Res>();
 
@@ -152,6 +170,8 @@ impl<B: Bus> DynBusStorage<B> {
         slot.put(value);
     }
 
+    /// Stores the (Rx, Tx) pair, or either of them if Nones are provided.
+    /// This consumes the bus slot for this message type.  Future calls to store on this message type will fail.
     pub fn store_channel<Msg, Chan, Bus>(
         &self,
         rx: Option<Chan::Rx>,
@@ -193,133 +213,8 @@ impl<B: Bus> DynBusStorage<B> {
         Ok(())
     }
 
-    // pub fn take_channel<Msg, Source, Target, Chan>(
-    //     &self,
-    //     other: &Source,
-    //     rx: bool,
-    //     tx: bool,
-    // ) -> Result<(), crate::bus::TakeChannelError>
-    // where
-    //     Msg: Message<Target, Channel = Chan> + Message<Source, Channel = Chan> + 'static,
-    //     Chan: Channel,
-    //     Source: DynBus,
-    // {
-    //     // TODO: clean up this function.  way too complicated
-    //     if !rx && !tx {
-    //         return Ok(());
-    //     }
-
-    //     other.storage().link_channel::<Msg, Source>();
-
-    //     let id = TypeId::of::<Msg>();
-
-    //     let mut target = self.state.write().expect("cannot lock other");
-    //     if target.channels.contains(&id) {
-    //         return Err(TakeChannelError::already_linked::<Target, Msg>());
-    //     }
-
-    //     let (rx_value, tx_value) = {
-    //         let source = other.storage();
-    //         let mut source = source.state.write().expect("cannot lock source");
-
-    //         let tx_value = if tx {
-    //             source
-    //                 .tx
-    //                 .get_mut(&id)
-    //                 .map(|v| v.clone_tx::<Chan>())
-    //                 .flatten()
-    //         } else {
-    //             None
-    //         };
-
-    //         let rx_value = if rx {
-    //             source
-    //                 .rx
-    //                 .get_mut(&id)
-    //                 .map(|v| v.clone_rx::<Chan>(tx_value.as_ref()))
-    //                 .flatten()
-    //         } else {
-    //             None
-    //         };
-
-    //         (rx_value, tx_value)
-    //     };
-
-    //     let rx_missing = rx && rx_value.is_none();
-    //     let tx_missing = tx && tx_value.is_none();
-    //     match (rx_missing, tx_missing) {
-    //         (true, true) => {
-    //             return Err(TakeChannelError::already_taken::<Source, Msg>(Link::Both));
-    //         }
-    //         (true, false) => {
-    //             return Err(TakeChannelError::already_taken::<Source, Msg>(Link::Rx));
-    //         }
-    //         (false, true) => {
-    //             return Err(TakeChannelError::already_taken::<Source, Msg>(Link::Tx));
-    //         }
-    //         _ => {}
-    //     }
-
-    //     let link = match (rx && rx_value.is_some(), tx && tx_value.is_some()) {
-    //         (true, true) => Link::Both,
-    //         (true, false) => Link::Rx,
-    //         (false, true) => Link::Tx,
-    //         (false, false) => unreachable!(),
-    //     };
-
-    //     target.channels.insert(id);
-    //     debug!(
-    //         "{}/{} moved: {} => {}",
-    //         type_name::<Msg>(),
-    //         link,
-    //         type_name::<Source>(),
-    //         type_name::<Target>()
-    //     );
-
-    //     if rx {
-    //         target.rx.insert(id.clone(), BusSlot::new(rx_value));
-    //     }
-
-    //     if tx {
-    //         target.tx.insert(id.clone(), BusSlot::new(tx_value));
-    //     }
-
-    //     Ok(())
-    // }
-
-    // pub fn take_resource<Res, Source, Target>(
-    //     &self,
-    //     other: &Source,
-    // ) -> Result<(), TakeResourceError>
-    // where
-    //     Res: Resource<Source>,
-    //     Res: Resource<Target>,
-    //     Res: Storage,
-    //     Source: DynBus,
-    // {
-    //     let id = TypeId::of::<Res>();
-
-    //     let mut target = self.state.write().expect("cannot lock other");
-    //     if target.resources.contains_key(&id) {
-    //         return Err(TakeResourceError::taken::<Source, Res>());
-    //     }
-
-    //     let source = other.storage();
-
-    //     let res = source.clone_resource::<Res>()?;
-    //     drop(source);
-
-    //     debug!(
-    //         "Resource {} moved: {} => {}",
-    //         type_name::<Res>(),
-    //         type_name::<Source>(),
-    //         type_name::<Target>()
-    //     );
-    //     target.resources.insert(id.clone(), BusSlot::new(Some(res)));
-
-    //     Ok(())
-    // }
-
+    /// Writes a capacity to the bus storage, for the given message type.
+    /// Returns an error if the channel is already linked in the bus storage (as this capacity would do nothing).
     pub fn capacity<Msg>(&self, capacity: usize) -> Result<(), AlreadyLinkedError>
     where
         Msg: Message<B> + 'static,
@@ -341,6 +236,7 @@ impl<B: Bus> DynBusStorage<B> {
         Ok(())
     }
 
+    /// Attempts to lock the bus, and acquire the state for the given message TypeId.
     fn try_lock(&self, id: TypeId) -> Option<RwLockWriteGuard<DynBusState>> {
         let state = self.state.read().unwrap();
         if state.channels.contains(&id) {

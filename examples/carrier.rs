@@ -2,6 +2,7 @@ use bus::{MainBus, SubsurfaceBus};
 use lifeline::prelude::*;
 use message::{main::MainSend, subsurface::SubsurfaceSend};
 use service::HelloService;
+use simple_logger::SimpleLogger;
 
 /// This examples shows how to communicate between Bus instances using the CarryFrom trait
 /// When your application gets large, eventually you need to spawn new tasks as runtime (when a connection arrives)
@@ -9,7 +10,7 @@ use service::HelloService;
 /// Your new bus probably needs to communicate with your main application bus, and you can use a Carrier to do this.
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    simple_logger::init().expect("log init failed");
+    SimpleLogger::new().init().expect("log init failed");
 
     let main_bus = MainBus::default();
     let subsurface_bus = SubsurfaceBus::default();

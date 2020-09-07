@@ -1,8 +1,38 @@
+/// Defines a lifeline bus: it's struct, `Bus` impl, and `DynBus` impl.
+///
+/// ## Examples
+/// ```
+/// use lifeline::prelude::*;
+/// use tokio::sync::mpsc;
+///
+/// lifeline_bus!(pub struct ExampleBus);
+///
+/// // carry ExampleMessage on the bus, using a tokio mpsc sender.
+/// #[derive(Debug)]
+/// pub struct ExampleMessage {}
+/// impl Message<ExampleBus> for ExampleMessage {
+///     type Channel = mpsc::Sender<Self>;
+/// }
+/// ```
+/// You can also define private structs:
+/// ```
+/// use lifeline::prelude::*;
+///
+/// lifeline_bus!(struct PrivateExampleBus);
+/// ```
+/// You can also define generics (which are constrained to Debug):
+/// ```
+/// use lifeline::prelude::*;
+/// lifeline_bus!(pub struct ExampleBus<T>);
+/// ```
+/// ## Prelude, auto-imports, and rust-analyzer
+/// Unfortunately, rust-analyzer doesn't handle auto-imports for structures defined in macros.
+/// There is an ergonomic solution: define a prelude module in your crate root, and `pub use` all your bus structs.
+/// If you want, you can `pub use lifeline::prelude::*` as well.
 #[macro_export]
 macro_rules! lifeline_bus (
-            // match one or more generics separated by a comma
     (struct $name:ident $(< $( $gen:ident ),+ >)? ) => {
-        lifeline_bus! { () struct $name $(< $( $gen ),+ >)?; }
+        lifeline_bus! { () struct $name $(< $( $gen ),+ >)? }
     };
 
     (pub struct $name:ident $(< $( $gen:ident ),+ >)* ) => {
@@ -57,70 +87,9 @@ macro_rules! lifeline_bus (
                 self.storage.store_resource::<R, Self>(resource)
             }
 
-            // fn take_channel<Msg, Source>(
-            //     &self,
-            //     other: &Source,
-            // ) -> Result<(), $crate::TakeChannelError>
-            // where
-            //     Msg: $crate::Message<Self> + 'static,
-            //     Msg: $crate::Message<Source, Channel = <Msg as $crate::Message<Self>>::Channel>,
-            //     Source: $crate::dyn_bus::DynBus
-            // {
-            //     self.storage.take_channel::<Msg, Source, Self, <Msg as $crate::Message<Self>>::Channel>(other, true, true)
-            // }
-
-            // fn take_rx<Msg, Source>(
-            //     &self,
-            //     other: &Source,
-            // ) -> Result<(), $crate::TakeChannelError>
-            // where
-            //     Msg: $crate::Message<Self> + 'static,
-            //     Msg: $crate::Message<Source, Channel = <Msg as $crate::Message<Self>>::Channel>,
-            //     Source: $crate::dyn_bus::DynBus
-            // {
-            //     self.storage.take_channel::<Msg, Source, Self, <Msg as $crate::Message<Self>>::Channel>(other, true, false)
-            // }
-
-            // fn take_tx<Msg, Source>(
-            //     &self,
-            //     other: &Source,
-            // ) -> Result<(), $crate::TakeChannelError>
-            // where
-            //     Msg: $crate::Message<Self> + 'static,
-            //     Msg: $crate::Message<Source, Channel = <Msg as $crate::Message<Self>>::Channel>,
-            //     Source: $crate::dyn_bus::DynBus
-            // {
-            //     self.storage.take_channel::<Msg, Source, Self, <Msg as $crate::Message<Self>>::Channel>(other, false, true)
-            // }
-
-            // fn take_resource<Res, Source>(
-            //     &self,
-            //     other: &Source,
-            // ) -> Result<(), $crate::error::TakeResourceError>
-            // where
-            //     Res: $crate::Storage,
-            //     Res: $crate::Resource<Source>,
-            //     Res: $crate::Resource<Self>,
-            //     Source: $crate::dyn_bus::DynBus
-            // {
-            //     self.storage.take_resource::<Res, Source, Self>(other)
-            // }
-
             fn storage(&self) -> &$crate::dyn_bus::DynBusStorage<Self> {
                 &self.storage
             }
         }
     }
-    // ($name:ident) => {
-    //     #[derive(Debug, Default)]
-    //     struct $name {
-    //         storage: $crate::dyn_bus::DynBusStorage<Self>,
-    //     }
-
-    //     impl $crate::dyn_bus::DynBus for $name {
-    //         fn storage(&self) -> &$crate::dyn_bus::DynBusStorage<Self> {
-    //             &self.storage
-    //         }
-    //     }
-    // };
 );

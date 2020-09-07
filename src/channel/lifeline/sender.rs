@@ -4,6 +4,7 @@ use log::trace;
 
 use std::{fmt::Debug, marker::PhantomData};
 
+/// A Sender wrapper, which can be configured to log messages.
 pub struct LifelineSender<T, S> {
     inner: S,
     log: bool,

@@ -8,6 +8,7 @@ use std::{
     marker::{PhantomData, Send},
 };
 
+/// A channel wrapper, which can be configured to log messages.
 #[pin_project(project = InnerProjection)]
 pub struct LifelineReceiver<T, R> {
     #[pin]
@@ -81,6 +82,7 @@ where
     }
 }
 
+#[cfg(feature = "tokio-channels")]
 mod tokio {
     use super::LifelineReceiver;
     use std::{

@@ -1,13 +1,14 @@
 use bus::SubscriptionBus;
 use lifeline::{prelude::*, subscription::Subscription};
 use message::ExampleId;
+use simple_logger::SimpleLogger;
 use time::Duration;
 use tokio::time;
 
 /// The subscription service maintains a list of subscribed entries.
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    simple_logger::init().expect("log init failed");
+    SimpleLogger::new().init().expect("log init failed");
 
     let bus = SubscriptionBus::default();
 

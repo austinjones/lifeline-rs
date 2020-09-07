@@ -1,3 +1,4 @@
+//! The DynBus implementation used by `lifeline_bus!`, and TypeId-based slot storage.
 mod macros;
 mod slot;
 mod storage;
@@ -11,15 +12,31 @@ use crate::{
 
 pub use storage::DynBusStorage;
 
+/// An extension trait which defines operations on a DynBus, which stores `box dyn` trait objects internally.
+///
+/// DynBus implementations are created using the `lifeline_bus!` macro.
 pub trait DynBus: Bus {
+    /// Stores an manually constructed Receiver on the bus, for the provided message type.
+    ///
+    /// This is useful if you need to link a lifeline bus to other async message-based code.
+    ///
+    /// If the message channel has already been linked (from a call to `bus.rx`, `bus.tx`, or `bus.capacity`), returns an error.
     fn store_rx<Msg>(&self, rx: <Msg::Channel as Channel>::Rx) -> Result<(), AlreadyLinkedError>
     where
         Msg: Message<Self> + 'static;
 
+    /// Stores an manually constructed Sender on the bus, for the provided message type.
+    ///
+    /// This is useful if you need to link a lifeline bus to other async message-based code.
+    ///
+    /// If the message channel has already been linked (from a call to `bus.rx`, `bus.tx`, or `bus.capacity`), returns an error.
     fn store_tx<Msg>(&self, tx: <Msg::Channel as Channel>::Tx) -> Result<(), AlreadyLinkedError>
     where
         Msg: Message<Self> + 'static;
 
+    /// Stores a channel pair on the bus, for the provided message type.
+    ///
+    /// If the message channel has already been linked (from a call to `bus.rx`, `bus.tx`, or `bus.capacity`), returns an error.
     fn store_channel<Msg>(
         &self,
         rx: <Msg::Channel as Channel>::Rx,
@@ -28,33 +45,12 @@ pub trait DynBus: Bus {
     where
         Msg: Message<Self> + 'static;
 
+    /// Stores a resource on the bus.
+    ///
+    /// Resources are commonly used for clonable configuration structs, or takeable resources such as websocket connections.
     fn store_resource<R: Resource<Self>>(&self, resource: R);
 
-    // fn take_channel<Msg, Source>(&self, other: &Source) -> Result<(), TakeChannelError>
-    // where
-    //     Msg: Message<Self> + 'static,
-    //     Msg: Message<Source, Channel = <Msg as Message<Self>>::Channel>,
-    //     Source: DynBus;
-
-    // fn take_rx<Msg, Source>(&self, other: &Source) -> Result<(), TakeChannelError>
-    // where
-    //     Msg: Message<Self> + 'static,
-    //     Msg: Message<Source, Channel = <Msg as Message<Self>>::Channel>,
-    //     Source: DynBus;
-
-    // fn take_tx<Msg, Source>(&self, other: &Source) -> Result<(), TakeChannelError>
-    // where
-    //     Msg: Message<Self> + 'static,
-    //     Msg: Message<Source, Channel = <Msg as Message<Self>>::Channel>,
-    //     Source: DynBus;
-
-    // fn take_resource<Res, Source>(&self, other: &Source) -> Result<(), TakeResourceError>
-    // where
-    //     Res: Storage,
-    //     Res: Resource<Source>,
-    //     Res: Resource<Self>,
-    //     Source: DynBus;
-
+    /// Returns the `DynBusStorage` struct which manages the trait object slots.
     fn storage(&self) -> &DynBusStorage<Self>;
 }
 
