@@ -75,11 +75,11 @@ jobs:
           args: --example associated
 
       # Run the async-std example with custom features
-      # - name: example | async-std
-      #   uses: actions-rs/cargo@v1
-      #   with:
-      #     command: run
-      #     args: --example async-std --no-default-features --features="dyn-bus async-std-executor async-std-channels"
+      - name: example | async-std
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --example async-std --no-default-features --features="dyn-bus async-std-executor async-std-channels"
 
       - name: example | carrier
         uses: actions-rs/cargo@v1
