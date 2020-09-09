@@ -33,14 +33,13 @@ jobs:
         if: steps.cargo-cache.outputs.cache-hit != 'true'
         with:
           command: build
-          args: --locked
 
       - name: cargo build | dev dependencies
         uses: actions-rs/cargo@v1
         if: steps.cargo-cache.outputs.cache-hit != 'true'
         with:
           command: test
-          args: --locked --no-run
+          args: --no-run
 
   check:
     name: cargo check
