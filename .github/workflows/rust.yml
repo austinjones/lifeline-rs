@@ -32,7 +32,8 @@ jobs:
         uses: actions-rs/cargo@v1
         if: steps.cargo-cache.outputs.cache-hit != 'true'
         with:
-          command: build --all-features
+          command: build
+          args: --all-features
 
       - name: cargo build | dev dependencies
         uses: actions-rs/cargo@v1
