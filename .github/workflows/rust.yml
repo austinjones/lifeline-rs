@@ -39,8 +39,8 @@ jobs:
         uses: actions-rs/cargo@v1
         if: steps.cargo-cache.outputs.cache-hit != 'true'
         with:
-          command: test --all-features
-          args: --no-run
+          command: test
+          args: --all-features --no-run
 
   check:
     name: cargo check
@@ -95,7 +95,8 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-
+          args: --all-features
+          
       # Run all the examples
       - name: example | associated
         uses: actions-rs/cargo@v1
