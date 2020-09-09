@@ -32,13 +32,13 @@ jobs:
         uses: actions-rs/cargo@v1
         if: steps.cargo-cache.outputs.cache-hit != 'true'
         with:
-          command: build
+          command: build --all-features
 
       - name: cargo build | dev dependencies
         uses: actions-rs/cargo@v1
         if: steps.cargo-cache.outputs.cache-hit != 'true'
         with:
-          command: test
+          command: test --all-features
           args: --no-run
 
   check:
