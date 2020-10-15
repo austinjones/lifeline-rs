@@ -19,6 +19,9 @@ maintenance = { status = "actively-developed" }
 pin-project = "0.4.23"
 futures-util = { version = "0.3", default-features = false }
 
+arc-swap = "0.4"
+lockfree = "0.5"
+
 async-trait = "0.1"
 thiserror = "1.0"
 anyhow = "1.0"

@@ -1,5 +1,7 @@
 use crate::Storage;
 
+pub mod barrier;
+
 #[cfg(feature = "async-std-channels")]
 mod async_std;
 

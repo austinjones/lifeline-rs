@@ -97,7 +97,7 @@ where
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        if self.inner.cancel.load(Ordering::Relaxed) {
+        if self.inner.complete.load(Ordering::Relaxed) {
             debug!("CANCEL {}", self.name);
             return Poll::Ready(());
         }
@@ -109,13 +109,13 @@ where
         }
 
         // Register to receive a wakeup if the future is aborted in the... future
-        self.inner.waker.register(cx.waker());
+        self.inner.task_waker.register(cx.waker());
 
         // Check to see if the future was aborted between the first check and
         // registration.
         // Checking with `Relaxed` is sufficient because `register` introduces an
         // `AcqRel` barrier.
-        if self.inner.cancel.load(Ordering::Relaxed) {
+        if self.inner.complete.load(Ordering::Relaxed) {
             debug!("CANCEL {}", self.name);
             return Poll::Ready(());
         }
@@ -154,6 +154,29 @@ impl Lifeline {
     }
 }
 
+impl Future for Lifeline {
+    type Output = ();
+
+    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
+        if self.inner.complete.load(Ordering::Relaxed) {
+            return Poll::Ready(());
+        }
+
+        // Register to receive a wakeup if the future is aborted in the... future
+        self.inner.lifeline_waker.register(cx.waker());
+
+        // Check to see if the future was aborted between the first check and
+        // registration.
+        // Checking with `Relaxed` is sufficient because `register` introduces an
+        // `AcqRel` barrier.
+        if self.inner.complete.load(Ordering::Relaxed) {
+            return Poll::Ready(());
+        }
+
+        Poll::Pending
+    }
+}
+
 impl Drop for Lifeline {
     fn drop(&mut self) {
         self.inner.abort();
@@ -162,20 +185,22 @@ impl Drop for Lifeline {
 
 #[derive(Debug)]
 pub(crate) struct LifelineInner {
-    waker: AtomicWaker,
-    cancel: AtomicBool,
+    task_waker: AtomicWaker,
+    lifeline_waker: AtomicWaker,
+    complete: AtomicBool,
 }
 
 impl LifelineInner {
     pub fn new() -> Self {
         LifelineInner {
-            waker: AtomicWaker::new(),
-            cancel: AtomicBool::new(false),
+            task_waker: AtomicWaker::new(),
+            lifeline_waker: AtomicWaker::new(),
+            complete: AtomicBool::new(false),
         }
     }
 
     pub fn abort(&self) {
-        self.cancel.store(true, Ordering::Relaxed);
-        self.waker.wake();
+        self.complete.store(true, Ordering::Relaxed);
+        self.task_waker.wake();
     }
 }

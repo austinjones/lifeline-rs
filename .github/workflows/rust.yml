@@ -129,12 +129,18 @@ jobs:
           command: run
           args: --example impl_channel
 
-      - name: example | state
+      - name: example | shutdown
         uses: actions-rs/cargo@v1
         with:
           command: run
           args: --example state
 
+      - name: example | state
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --example state
+          
       - name: example | subscription
         uses: actions-rs/cargo@v1
         with:

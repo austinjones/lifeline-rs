@@ -101,6 +101,7 @@ pub use channel::lifeline::{Receiver, Sender};
 #[cfg(feature = "tokio-channels")]
 pub use channel::subscription;
 
+pub use channel::barrier;
 pub use channel::Channel;
 pub use service::*;
 pub use storage::Storage;
