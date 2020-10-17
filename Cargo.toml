@@ -38,7 +38,7 @@ simple_logger = "1.9"
 tokio = { version = "0.2", features = ["sync", "time", "macros"] }
 
 [features]
-default = ["dyn-bus", "tokio-executor", "tokio-channels"]
+default = ["barrier-channel", "dyn-bus", "tokio-executor", "tokio-channels"]
 
 dyn-bus = []
 
