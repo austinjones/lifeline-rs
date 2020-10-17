@@ -8,6 +8,29 @@ use std::{
 
 use crate::{Channel, Receiver, Sender, Storage};
 
+/// Constructs a new barrier pair (sender/receiver)
+///
+/// The barrier channel is a variant of a oneshot channel.
+///
+/// The sender can be released (or dropped), which will resolve all receivers.
+///
+/// Receivers implement Future, and resolve when the barrier is released.
+///
+/// # Example
+/// ```
+/// use lifeline::barrier::*;
+///
+/// #[derive(Debug, Clone, Default)]
+/// struct Message {}
+///
+///
+///
+/// async fn run() {
+///    let (tx, rx) = barrier();
+///    tx.release(Message {});
+///    rx.await;
+/// }
+/// ```
 pub fn barrier<T: Clone + Default + Sync>() -> (Barrier<T>, BarrierReceiver<T>) {
     let inner = Arc::new(BarrierInner::new());
     let barrier = Barrier::new(inner.clone());
@@ -18,6 +41,19 @@ pub fn barrier<T: Clone + Default + Sync>() -> (Barrier<T>, BarrierReceiver<T>) 
 
 /// A type which provdides a runtime synchronization barrier.
 /// BarrierReceiver implements Future, and the associated receiver completes when this barrier is dropped, or when release is called.
+///
+/// # Example
+/// ```
+/// use lifeline::barrier::*;
+///
+/// #[derive(Debug, Clone, Default)]
+/// struct Message {}
+///
+/// async fn run() {
+///    let (tx, _rx) = barrier();
+///    tx.release(Message {});
+/// }
+/// ```
 pub struct Barrier<T: Clone + Default + Sync> {
     inner: Arc<BarrierInner<T>>,
     _t: PhantomData<T>,
@@ -33,13 +69,13 @@ impl<T: Clone + Default + Sync> Barrier<T> {
 
     /// Releases the waker early.  
     pub fn release(self, value: T) {
-        self.inner.release(value)
+        self.inner.release(Some(value))
     }
 }
 
 impl<T: Clone + Default + Sync> Drop for Barrier<T> {
     fn drop(&mut self) {
-        self.inner.release(T::default())
+        self.inner.release(None)
     }
 }
 
@@ -52,15 +88,34 @@ impl<T: Clone + Default + Sync + 'static> Storage for Barrier<T> {
 #[async_trait]
 impl<T: Clone + Debug + Default + Send + Sync> Sender<T> for Barrier<T> {
     async fn send(&mut self, value: T) -> Result<(), crate::error::SendError<T>> {
-        self.inner.release(value);
+        self.inner.release(Some(value));
 
         Ok(())
     }
 }
 
-/// An asynchronous receiver for a synchronous barrier.
+/// A receiver for a Barrier channel.
 ///
-/// Implements Future, and resolves when the associated Barrier sender has been dropped.
+/// The barrier channel is a variant of a oneshot channel,
+/// where a Barrier sender acts as a synchronization fence.
+///
+/// The receiver implements Future and lifeline::Receiver, and resolves
+/// when the barrier sender is released or dropped
+///
+/// # Example
+/// ```
+/// use lifeline::barrier::*;
+///
+/// #[derive(Debug, Clone, Default)]
+/// struct Message {}
+///
+/// async fn run() {
+///    let (_tx, rx) = barrier::<Message>();
+///    drop(_tx);
+///    rx.await;
+/// }
+/// ```
+#[derive(Debug)]
 pub struct BarrierReceiver<T: Clone + Default + Sync> {
     inner: Arc<BarrierInner<T>>,
     _t: PhantomData<T>,
@@ -77,9 +132,9 @@ impl<T: Clone + Default + Sync> BarrierReceiver<T> {
     /// Returns when the associated barrier has been dropped.
     ///
     /// Equivalent to `self.await` or `self.clone().await`
-    pub async fn recv(&self) {
+    pub async fn recv(&self) -> T {
         let receiver = self.clone();
-        receiver.await;
+        receiver.await
     }
 }
 
@@ -126,12 +181,13 @@ impl<T: Clone + Default + Sync + 'static> Storage for BarrierReceiver<T> {
 impl<T: Clone + Default + Sync> Receiver<T> for BarrierReceiver<T> {
     async fn recv(&mut self) -> Option<T> {
         let receiver = self.clone();
-        receiver.await;
+        let value = receiver.await;
 
-        None
+        Some(value)
     }
 }
 
+#[derive(Debug)]
 struct BarrierWaker {
     wakers: Stack<Waker>,
 }
@@ -154,26 +210,32 @@ impl BarrierWaker {
     }
 }
 
+#[derive(Debug)]
 struct BarrierValue<T: Default + Sync> {
-    slot: ArcSwap<T>,
+    slot: ArcSwap<Option<T>>,
 }
 
 impl<T: Clone + Default + Sync> BarrierValue<T> {
     pub fn new() -> Self {
         Self {
-            slot: ArcSwap::new(Arc::new(T::default())),
+            slot: ArcSwap::new(Arc::new(None)),
         }
     }
 
-    pub fn store(&self, value: T) {
+    pub fn store(&self, value: Option<T>) {
+        if value.is_none() && self.slot.load().is_some() {
+            return;
+        }
+
         self.slot.store(Arc::new(value));
     }
 
-    pub fn retrieve(&self) -> T {
+    pub fn retrieve(&self) -> Option<T> {
         (**self.slot.load()).clone()
     }
 }
 
+#[derive(Debug)]
 struct BarrierInner<T: Clone + Default + Sync> {
     released: AtomicBool,
     waker: BarrierWaker,
@@ -190,10 +252,10 @@ impl<T: Clone + Default + Sync> BarrierInner<T> {
     }
 
     pub fn value(&self) -> T {
-        self.value.retrieve()
+        self.value.retrieve().unwrap_or_else(|| T::default())
     }
 
-    pub fn release(&self, value: T) {
+    pub fn release(&self, value: Option<T>) {
         self.value.store(value);
         self.released.store(true, Ordering::Relaxed);
         self.waker.wake();
@@ -210,5 +272,94 @@ impl<T: Clone + Default + Send + Sync + 'static> Channel for Barrier<T> {
 
     fn default_capacity() -> usize {
         0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::barrier;
+    use crate::{assert_completes, assert_times_out};
+
+    #[derive(Debug, Default, Clone, PartialEq, Eq)]
+    struct Message {
+        data: bool,
+    }
+
+    #[tokio::test]
+    async fn simple_barrier() {
+        let (tx, rx) = barrier();
+
+        let rx_timeout = rx.clone();
+        assert_times_out!(async {
+            rx_timeout.await;
+        });
+
+        tx.release(Message { data: true });
+        println!("{:?}", &rx);
+
+        assert_completes!(async {
+            let message = rx.await;
+            assert_eq!(Message { data: true }, message);
+        });
+    }
+
+    #[tokio::test]
+    async fn sender_receiver() -> anyhow::Result<()> {
+        use crate::Sender;
+
+        let (mut tx, mut rx) = barrier();
+
+        let rx_timeout = rx.clone();
+
+        assert_times_out!(async {
+            rx_timeout.recv().await;
+        });
+
+        tx.send(Message { data: true }).await?;
+
+        assert_completes!(async {
+            let message = crate::Receiver::recv(&mut rx).await;
+            assert_eq!(Some(Message { data: true }), message);
+        });
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn drop_sends() {
+        let (tx, rx) = barrier();
+
+        let rx_timeout = rx.clone();
+
+        assert_times_out!(async {
+            rx_timeout.recv().await;
+        });
+
+        drop(tx);
+
+        assert_completes!(async {
+            let message = rx.recv().await;
+            assert_eq!(Message { data: false }, message);
+        });
+    }
+
+    #[tokio::test]
+    async fn multiple_receivers() {
+        let (tx, rx) = barrier();
+
+        let rx_timeout = rx.clone();
+        assert_times_out!(async {
+            rx_timeout.recv().await;
+        });
+
+        drop(tx);
+
+        let rx2 = rx.clone();
+
+        assert_completes!(async {
+            assert_eq!(Message { data: false }, rx.recv().await);
+            assert_eq!(Message { data: false }, rx.await);
+            assert_eq!(Message { data: false }, rx2.await);
+        });
     }
 }

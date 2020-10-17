@@ -47,8 +47,6 @@ pub async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// These are the messages which our application uses to communicate.
-/// The messages are carried over channels, using an async library (tokio, async_std, futures).
 mod message {
     #[derive(Debug, Clone)]
     pub enum MainRecv {
@@ -57,7 +55,7 @@ mod message {
     }
 
     /// This is the main shutdown event.  
-    /// The main thread waits on this, and when received, it exits.
+    /// The main thread waits on this, and when received, it exits.n
     /// This causes all lifelines to be dropped and cancelled
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct MainShutdown;
@@ -69,8 +67,9 @@ mod message {
     #[derive(Debug, Clone)]
     pub struct DomainShutdown;
 
-    /// This is a barrier fence.  It represents a synchronization between two async tasks.
-    /// The sender must transmit the fence (or be dropped) in order for the receiver to proceed.
+    /// This is a barrier message.  It's carried by a lifeline barrier channel
+    /// Barrier channels behave a bit like oneshot channels.
+    ///   but they produce a value when they are dropped.
     #[derive(Debug, Default, Clone)]
     pub struct MainEventBarrier;
 }
@@ -100,10 +99,6 @@ mod bus {
     }
 }
 
-/// This is the service.
-/// The service is a spawnable task that launches from the bus.
-/// Service spawn is **synchronous** - the spawn should not send/receive messages, and it should be branchless.
-/// This makes errors very predictable.  If you take an MPSC receiver twice, you immediately get the error on startup.
 mod service {
     use super::bus::ExampleBus;
     use crate::message::{DomainShutdown, MainEventBarrier, MainRecv, MainShutdown};
@@ -119,6 +114,7 @@ mod service {
         type Lifeline = anyhow::Result<Self>;
 
         fn spawn(bus: &Self::Bus) -> Self::Lifeline {
+            // Here we'll spawn a task which waits for a Goodbye message, then quits
             let _greet = {
                 let mut rx = bus.rx::<MainRecv>()?;
                 let mut tx_barrier = bus.tx::<MainEventBarrier>()?;
@@ -137,6 +133,7 @@ mod service {
                 })
             };
 
+            // And we'll spawn a shutdown task which synchronizes shutdown events
             let _shutdown = {
                 let mut rx_domain_shutdown = bus.rx::<DomainShutdown>()?;
                 let mut rx_barrier = bus.rx::<MainEventBarrier>()?;
