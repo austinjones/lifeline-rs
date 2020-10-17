@@ -54,6 +54,7 @@ pub fn barrier<T: Clone + Default + Sync>() -> (Barrier<T>, BarrierReceiver<T>) 
 ///    tx.release(Message {});
 /// }
 /// ```
+#[derive(Debug)]
 pub struct Barrier<T: Clone + Default + Sync> {
     inner: Arc<BarrierInner<T>>,
     _t: PhantomData<T>,
