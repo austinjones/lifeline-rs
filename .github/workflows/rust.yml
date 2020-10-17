@@ -133,7 +133,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --example state
+          args: --example shutdown --features "barrier-channel"
 
       - name: example | state
         uses: actions-rs/cargo@v1
