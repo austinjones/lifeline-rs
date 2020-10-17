@@ -57,5 +57,9 @@ name = "async-std"
 required-features = ["dyn-bus", "async-std-executor", "async-std-channels"]
 
 [[example]]
+name = "subscription"
+required-features = ["tokio-channels", "subscription-channel"]
+
+[[example]]
 name = "shutdown"
 required-features = ["barrier-channel"]
