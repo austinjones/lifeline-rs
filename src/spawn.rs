@@ -217,7 +217,7 @@ mod tests {
     use std::{future::Future, task::Poll};
 
     use super::spawn_task;
-    use crate::{assert_completes, assert_times_out, barrier::*};
+    use crate::{assert_completes, assert_times_out};
 
     struct Pending {}
 
@@ -243,13 +243,7 @@ mod tests {
 
     #[tokio::test]
     async fn lifeline_running_completes() {
-        let (tx, rx) = barrier();
-
-        let lifeline = spawn_task("test_complete".to_string(), async move {
-            rx.await;
-        });
-
-        tx.release(());
+        let lifeline = spawn_task("test_complete".to_string(), async move {});
 
         assert_completes!(async move {
             lifeline.await;
