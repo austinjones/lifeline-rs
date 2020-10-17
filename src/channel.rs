@@ -1,11 +1,14 @@
 use crate::Storage;
 
+#[cfg(feature = "barrier-channel")]
+pub mod barrier;
+
 #[cfg(feature = "async-std-channels")]
 mod async_std;
 
 pub mod lifeline;
 
-#[cfg(feature = "tokio-channels")]
+#[cfg(all(feature = "subscription-channel", feature = "tokio-channels"))]
 pub mod subscription;
 
 #[cfg(feature = "tokio-channels")]

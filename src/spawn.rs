@@ -97,7 +97,7 @@ where
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        if self.inner.cancel.load(Ordering::Relaxed) {
+        if self.inner.complete.load(Ordering::Relaxed) {
             debug!("CANCEL {}", self.name);
             return Poll::Ready(());
         }
@@ -105,17 +105,18 @@ where
         // attempt to complete the future
         if let Poll::Ready(result) = self.as_mut().project().future.poll(cx) {
             debug!("END {} {:?}", self.name, result);
+            self.inner.complete();
             return Poll::Ready(());
         }
 
         // Register to receive a wakeup if the future is aborted in the... future
-        self.inner.waker.register(cx.waker());
+        self.inner.task_waker.register(cx.waker());
 
         // Check to see if the future was aborted between the first check and
         // registration.
         // Checking with `Relaxed` is sufficient because `register` introduces an
         // `AcqRel` barrier.
-        if self.inner.cancel.load(Ordering::Relaxed) {
+        if self.inner.complete.load(Ordering::Relaxed) {
             debug!("CANCEL {}", self.name);
             return Poll::Ready(());
         }
@@ -154,6 +155,29 @@ impl Lifeline {
     }
 }
 
+impl Future for Lifeline {
+    type Output = ();
+
+    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
+        if self.inner.complete.load(Ordering::Relaxed) {
+            return Poll::Ready(());
+        }
+
+        // Register to receive a wakeup if the future is aborted in the... future
+        self.inner.lifeline_waker.register(cx.waker());
+
+        // Check to see if the future was aborted between the first check and
+        // registration.
+        // Checking with `Relaxed` is sufficient because `register` introduces an
+        // `AcqRel` barrier.
+        if self.inner.complete.load(Ordering::Relaxed) {
+            return Poll::Ready(());
+        }
+
+        Poll::Pending
+    }
+}
+
 impl Drop for Lifeline {
     fn drop(&mut self) {
         self.inner.abort();
@@ -162,20 +186,67 @@ impl Drop for Lifeline {
 
 #[derive(Debug)]
 pub(crate) struct LifelineInner {
-    waker: AtomicWaker,
-    cancel: AtomicBool,
+    task_waker: AtomicWaker,
+    lifeline_waker: AtomicWaker,
+    complete: AtomicBool,
 }
 
 impl LifelineInner {
     pub fn new() -> Self {
         LifelineInner {
-            waker: AtomicWaker::new(),
-            cancel: AtomicBool::new(false),
+            task_waker: AtomicWaker::new(),
+            lifeline_waker: AtomicWaker::new(),
+            complete: AtomicBool::new(false),
         }
     }
 
     pub fn abort(&self) {
-        self.cancel.store(true, Ordering::Relaxed);
-        self.waker.wake();
+        self.complete.store(true, Ordering::Relaxed);
+        self.task_waker.wake();
+    }
+
+    pub fn complete(&self) {
+        self.complete.store(true, Ordering::Relaxed);
+        self.lifeline_waker.wake();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::{future::Future, task::Poll};
+
+    use super::spawn_task;
+    use crate::{assert_completes, assert_times_out};
+
+    struct Pending {}
+
+    impl Future for Pending {
+        type Output = ();
+
+        fn poll(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Self::Output> {
+            Poll::Pending
+        }
+    }
+
+    #[tokio::test]
+    async fn lifeline_running_await_times_out() {
+        let lifeline = spawn_task("test_complete".to_string(), Pending {});
+
+        assert_times_out!(async move {
+            lifeline.await;
+        });
+    }
+
+    #[tokio::test]
+    async fn lifeline_running_completes() {
+        let lifeline = spawn_task("test_complete".to_string(), async move {});
+
+        assert_completes!(async move {
+            lifeline.await;
+        });
     }
 }

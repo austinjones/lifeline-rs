@@ -129,15 +129,21 @@ jobs:
           command: run
           args: --example impl_channel
 
+      - name: example | shutdown
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --example shutdown --features "barrier-channel"
+
       - name: example | state
         uses: actions-rs/cargo@v1
         with:
           command: run
           args: --example state
-
+          
       - name: example | subscription
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --example subscription
+          args: --example subscription --features "tokio-channels subscription-channel"
 

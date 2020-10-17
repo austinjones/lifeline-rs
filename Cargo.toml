@@ -1,6 +1,6 @@
 [package]
 name = "lifeline"
-version = "0.3.3"
+version = "0.4.0"
 description = "Lifeline is a dependency injection library for asynchronous message-based applications."
 keywords = ["async", "tokio", "async", "actor", "actors"]
 categories = ["asynchronous", "rust-patterns", "web-programming"]
@@ -19,6 +19,9 @@ maintenance = { status = "actively-developed" }
 pin-project = "0.4.23"
 futures-util = { version = "0.3", default-features = false }
 
+arc-swap = { version = "0.4", optional = true }
+lockfree = { version = "0.5", optional = true }
+
 async-trait = "0.1"
 thiserror = "1.0"
 anyhow = "1.0"
@@ -35,7 +38,7 @@ simple_logger = "1.9"
 tokio = { version = "0.2", features = ["sync", "time", "macros"] }
 
 [features]
-default = ["dyn-bus", "tokio-executor", "tokio-channels"]
+default = ["barrier-channel", "dyn-bus", "tokio-executor", "tokio-channels"]
 
 dyn-bus = []
 
@@ -46,6 +49,17 @@ async-std-executor = ["async-std/default"]
 async-std-channels = ["async-std/unstable"]
 async-std-attributes = ["async-std/attributes"]
 
+subscription-channel = []
+barrier-channel = ["arc-swap", "lockfree"]
+
 [[example]]
 name = "async-std"
 required-features = ["dyn-bus", "async-std-executor", "async-std-channels"]
+
+[[example]]
+name = "subscription"
+required-features = ["tokio-channels", "subscription-channel"]
+
+[[example]]
+name = "shutdown"
+required-features = ["barrier-channel"]
