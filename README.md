@@ -19,12 +19,12 @@ For a full-scale application see [tab-rs.](https://github.com/austinjones/tab-rs
 ## Quickstart
 Lifeline uses `tokio` as it's default runtime.  Tokio provides a rich set of async channels.
 ```toml
-lifeline = "0.3"
+lifeline = "0.4"
 ```
 
 Lifeline also supports the async-std runtime, and it's `mpsc` channel implementation:
 ```toml
-lifeline = { version = "0.3", features = ["dyn-bus", "async-std-executor", "async-std-channels"] }
+lifeline = { version = "0.4", features = ["dyn-bus", "async-std-executor", "async-std-channels"] }
 ```
 
 ## The Bus
