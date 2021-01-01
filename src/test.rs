@@ -1,11 +1,11 @@
 //! Helpers which assist in testing applications based on lifeline.
 
+use tokio::runtime::Runtime;
+
 /// Blocks on the future, using a new async runtime.
 /// This is helpful in doctests
 #[cfg(feature = "tokio-executor")]
 pub fn block_on<Fut: std::future::Future<Output = Out>, Out>(fut: Fut) -> Out {
-    use tokio::runtime::Runtime;
-
     let mut runtime = Runtime::new().expect("doctest runtime creation failed");
     runtime.block_on(fut)
 }
