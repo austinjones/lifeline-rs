@@ -6,7 +6,7 @@ use tokio::runtime::Runtime;
 /// This is helpful in doctests
 #[cfg(feature = "tokio-executor")]
 pub fn block_on<Fut: std::future::Future<Output = Out>, Out>(fut: Fut) -> Out {
-    let mut runtime = Runtime::new().expect("doctest runtime creation failed");
+    let runtime = Runtime::new().expect("doctest runtime creation failed");
     runtime.block_on(fut)
 }
 
