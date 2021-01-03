@@ -5,7 +5,7 @@ use service::{MainService, StateService};
 use simple_logger::SimpleLogger;
 use state::{LocationState, SkyState, WeatherState};
 use std::time::Duration;
-use tokio::time::delay_for;
+use tokio::time::sleep;
 
 /// This example shows how to maintain state in a service, and broadcast it using channels.
 /// For documentation on basic concepts (bus/service/channels), see the 'hello' example.
@@ -32,7 +32,7 @@ pub async fn main() -> anyhow::Result<()> {
     tx.send(MainRecv::Travel(LocationState::Boston)).await?;
 
     // state updates are asynchronous.  they may not be propagated immediately
-    delay_for(Duration::from_millis(20)).await;
+    sleep(Duration::from_millis(20)).await;
 
     let state = rx.recv().await;
     let expected = SkyState {
@@ -49,7 +49,7 @@ pub async fn main() -> anyhow::Result<()> {
     tx.send(MainRecv::Travel(LocationState::SanDiego)).await?;
 
     // state updates are asynchronous.  they may not be propagated immediately
-    delay_for(Duration::from_millis(20)).await;
+    sleep(Duration::from_millis(20)).await;
 
     let state = rx.recv().await;
     let expected = SkyState {
@@ -249,7 +249,7 @@ mod service {
                     // this is actually useful - disconnected channels propagate shutdowns.
                     // in this case, if all the receivers have disconnected,
                     //   we can stop calculating the state.
-                    tx.broadcast(state.clone())?;
+                    tx.send(state.clone())?;
                 }
 
                 Ok(())

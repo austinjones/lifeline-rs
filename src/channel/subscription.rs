@@ -156,7 +156,12 @@ mod channel {
 
     impl<T: Clone> Receiver<T> {
         pub async fn recv(&mut self) -> Option<SubscriptionState<T>> {
-            self.rx.recv().await
+            if let Ok(_x) = self.rx.changed().await {
+                let ss = self.rx.borrow().clone();
+                Some(ss)
+            } else {
+                None
+            }
         }
     }
 
@@ -260,7 +265,7 @@ mod service {
                             }
 
                             state.subscriptions.insert(id, next_id);
-                            tx.broadcast(state.clone())?;
+                            tx.send(state.clone())?;
                             next_id += 1;
                         }
                         Subscription::Unsubscribe(id) => {
@@ -269,7 +274,7 @@ mod service {
                             }
 
                             state.subscriptions.remove(&id);
-                            tx.broadcast(state.clone())?;
+                            tx.send(state.clone())?;
                         }
                     }
                 }

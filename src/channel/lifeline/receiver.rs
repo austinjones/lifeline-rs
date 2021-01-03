@@ -94,7 +94,7 @@ mod tokio {
         pin::Pin,
         task::{Context, Poll},
     };
-    use tokio::stream::Stream;
+    use tokio_stream::Stream;
 
     impl<T, R> Stream for LifelineReceiver<T, R>
     where

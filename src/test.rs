@@ -6,7 +6,7 @@
 pub fn block_on<Fut: std::future::Future<Output = Out>, Out>(fut: Fut) -> Out {
     use tokio::runtime::Runtime;
 
-    let mut runtime = Runtime::new().expect("doctest runtime creation failed");
+    let runtime = Runtime::new().expect("doctest runtime creation failed");
     runtime.block_on(fut)
 }
 
@@ -27,12 +27,12 @@ pub fn block_on<Fut: std::future::Future<Output = Out>, Out>(fut: Fut) -> Out {
 ///
 /// ```rust
 /// use lifeline::assert_completes;
-/// use tokio::time::delay_for;
+/// use tokio::time::sleep;
 ///
 /// # let fut =
 /// async {
 ///     // Succeeds because default time is longer than delay.
-///     assert_completes!(delay_for(Duration::from_millis(5)));
+///     assert_completes!(sleep(Duration::from_millis(5)));
 /// }
 /// # ;
 /// # let mut runtime = tokio::runtime::Runtime::new().unwrap();
@@ -41,12 +41,12 @@ pub fn block_on<Fut: std::future::Future<Output = Out>, Out>(fut: Fut) -> Out {
 ///
 /// ```rust,should_panic
 /// use lifeline::assert_completes;
-/// use tokio::time::delay_for;
+/// use tokio::time::sleep;
 ///
 /// # let fut =
 /// async {
 ///     // Fails because timeout is shorter than delay.
-///     assert_completes!(delay_for(Duration::from_millis(250)), 10);
+///     assert_completes!(sleep(Duration::from_millis(250)), 10);
 /// }
 /// # ;
 /// # let mut runtime = tokio::runtime::Runtime::new().unwrap();
@@ -84,12 +84,12 @@ macro_rules! assert_completes {
 ///
 /// ```rust,should_panic
 /// use lifeline::assert_times_out;
-/// use tokio::time::delay_for;
+/// use tokio::time::sleep;
 ///
 /// # let fut =
 /// async {
 ///     // Fails because default time is longer than delay.
-///     assert_times_out!(delay_for(Duration::from_millis(5)));
+///     assert_times_out!(sleep(Duration::from_millis(5)));
 /// }
 /// # ;
 /// # let mut runtime = tokio::runtime::Runtime::new().unwrap();
@@ -98,12 +98,12 @@ macro_rules! assert_completes {
 ///
 /// ```rust
 /// use lifeline::assert_times_out;
-/// use tokio::time::delay_for;
+/// use tokio::time::sleep;
 ///
 /// # let fut =
 /// async {
 ///     // Succeeds because timeout is shorter than delay.
-///     assert_times_out!(delay_for(Duration::from_millis(250)), 10);
+///     assert_times_out!(sleep(Duration::from_millis(250)), 10);
 /// }
 /// # ;
 /// # let mut runtime = tokio::runtime::Runtime::new().unwrap();
