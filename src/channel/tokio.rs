@@ -158,7 +158,7 @@ where
 #[async_trait]
 impl<T> crate::Receiver<T> for watch::Receiver<T>
 where
-    T: Clone + Debug + Send + Sync,
+    T: Clone + Send + Sync,
 {
     async fn recv(&mut self) -> Option<T> {
         watch::Receiver::recv(self).await
