@@ -4,7 +4,7 @@ use crate::error::SendError;
 use async_trait::async_trait;
 use std::fmt::Debug;
 
-use super::combinators::{MapReceiver, MergeFromReceiver, MergeReceiver};
+use super::combinators::{FilterReceiver, MapReceiver, MergeFromReceiver, MergeReceiver};
 
 impl<T: Debug> SendError<T> {
     pub fn take_message(self) -> Option<T> {
@@ -41,6 +41,15 @@ pub trait ReceiverExt<T>: Receiver<T> + Unpin + Send + Sized {
         MapReceiver<Self, T, T2, Map>: ReceiverExt<T2>,
     {
         MapReceiver::new(self, map)
+    }
+
+    fn filter<Filter>(self, filter: Filter) -> FilterReceiver<Self, T, Filter>
+    where
+        Filter: Fn(&T) -> bool + Send + Unpin,
+        T: Send + Unpin,
+        FilterReceiver<Self, T, Filter>: ReceiverExt<T>,
+    {
+        FilterReceiver::new(self, filter)
     }
 
     fn merge<R2>(self, other: R2) -> MergeReceiver<Self, R2, T>
