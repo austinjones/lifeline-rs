@@ -34,10 +34,11 @@ pub trait Receiver<T> {
 }
 
 pub trait ReceiverExt<T>: Receiver<T> + Unpin + Send + Sized {
-    fn map<O, Map>(self, map: Map) -> MapReceiver<Self, T, O, Map>
+    fn map<T2, Map>(self, map: Map) -> MapReceiver<Self, T, T2, Map>
     where
-        Map: Fn(T) -> O + Send + Unpin,
+        Map: Fn(T) -> T2 + Send + Unpin,
         T: Send + Unpin,
+        MapReceiver<Self, T, T2, Map>: ReceiverExt<T2>,
     {
         MapReceiver::new(self, map)
     }
@@ -46,6 +47,7 @@ pub trait ReceiverExt<T>: Receiver<T> + Unpin + Send + Sized {
     where
         R2: Receiver<T> + Unpin + Send,
         T: Unpin + Send,
+        MergeReceiver<Self, R2, T>: ReceiverExt<T>,
     {
         MergeReceiver::new(self, other)
     }
@@ -55,9 +57,10 @@ pub trait ReceiverExt<T>: Receiver<T> + Unpin + Send + Sized {
         R2: Receiver<T2> + Unpin + Send,
         T: From<T2> + Unpin + Send,
         T2: Unpin + Send,
+        MergeFromReceiver<Self, R2, T, T2>: ReceiverExt<T2>,
     {
         MergeFromReceiver::new(self, other)
     }
 }
 
-impl<R, T> ReceiverExt<T> for R where R: Receiver<T> + Unpin + Send {}
+impl<R, T> ReceiverExt<T> for R where R: Receiver<T> + Unpin + Send + Sized {}
