@@ -6,9 +6,10 @@ use crate::Receiver;
 
 pub struct MergeFromReceiver<R1, R2, T, T2>
 where
-    R1: Receiver<T> + Send,
-    R2: Receiver<T2> + Send,
-    T: From<T2> + Send,
+    R1: Receiver<T> + Unpin + Send,
+    R2: Receiver<T2> + Unpin + Send,
+    T: From<T2> + Unpin + Send,
+    T2: Unpin + Send,
 {
     r1: R1,
     r2: R2,
@@ -19,9 +20,10 @@ where
 
 impl<R1, R2, T, T2> MergeFromReceiver<R1, R2, T, T2>
 where
-    R1: Receiver<T> + Send,
-    R2: Receiver<T2> + Send,
-    T: From<T2> + Send,
+    R1: Receiver<T> + Unpin + Send,
+    R2: Receiver<T2> + Unpin + Send,
+    T: From<T2> + Unpin + Send,
+    T2: Unpin + Send,
 {
     pub fn new(r1: R1, r2: R2) -> Self {
         Self {

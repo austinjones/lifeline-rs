@@ -33,29 +33,31 @@ pub trait Receiver<T> {
     async fn recv(&mut self) -> Option<T>;
 }
 
-pub trait ReceiverExt<T>: Send + Sized + Receiver<T> {
-    fn map<O, F>(self, map: F) -> MapReceiver<Self, T, O, F>
+pub trait ReceiverExt<T>: Receiver<T> + Unpin + Send + Sized {
+    fn map<O, Map>(self, map: Map) -> MapReceiver<Self, T, O, Map>
     where
-        F: Send + FnMut(T) -> O,
+        Map: Fn(T) -> O + Send + Unpin,
+        T: Send + Unpin,
     {
         MapReceiver::new(self, map)
     }
 
-    fn merge<R>(self, other: R) -> MergeReceiver<Self, R, T>
+    fn merge<R2>(self, other: R2) -> MergeReceiver<Self, R2, T>
     where
-        R: Receiver<T> + Send,
-        T: Send,
+        R2: Receiver<T> + Unpin + Send,
+        T: Unpin + Send,
     {
         MergeReceiver::new(self, other)
     }
 
-    fn merge_from<R, T2, O>(self, other: R) -> MergeFromReceiver<Self, R, T, T2>
+    fn merge_from<R2, T2, O>(self, other: R2) -> MergeFromReceiver<Self, R2, T, T2>
     where
-        R: ReceiverExt<T2> + Unpin + Send,
-        T: From<T2> + Send,
+        R2: Receiver<T2> + Unpin + Send,
+        T: From<T2> + Unpin + Send,
+        T2: Unpin + Send,
     {
         MergeFromReceiver::new(self, other)
     }
 }
 
-impl<R, T> ReceiverExt<T> for R where R: Receiver<T> + Send {}
+impl<R, T> ReceiverExt<T> for R where R: Receiver<T> + Unpin + Send {}
