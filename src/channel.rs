@@ -1,5 +1,7 @@
 use crate::Storage;
 
+pub mod combinators;
+
 #[cfg(feature = "barrier-channel")]
 pub mod barrier;
 

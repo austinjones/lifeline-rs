@@ -96,7 +96,7 @@ mod storage;
 pub mod test;
 
 pub use bus::*;
-pub use channel::lifeline::{Receiver, Sender};
+pub use channel::lifeline::{Receiver, ReceiverExt, Sender};
 
 #[cfg(all(feature = "subscription-channel", feature = "tokio-channels"))]
 pub use channel::subscription;
