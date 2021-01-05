@@ -2,8 +2,8 @@ use bus::SubscriptionBus;
 use lifeline::{prelude::*, subscription::Subscription};
 use message::ExampleId;
 use simple_logger::SimpleLogger;
-use time::Duration;
-use tokio::time;
+use std::time::Duration;
+use tokio::time::sleep;
 
 /// The subscription service maintains a list of subscribed entries.
 #[tokio::main]
@@ -18,7 +18,7 @@ pub async fn main() -> anyhow::Result<()> {
     // updates are asynchronous.
     // they are processed using lifeline that is stored in the sender
     tx.send(Subscription::Subscribe(ExampleId(1))).await?;
-    time::delay_for(Duration::from_millis(100)).await;
+    sleep(Duration::from_millis(100)).await;
 
     // the receiver can check whether an id is contained in the subscription
     assert!(rx.contains(&ExampleId(1)));

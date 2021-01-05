@@ -44,7 +44,7 @@ where
     }
 }
 
-impl<T: Send + 'static> Channel for broadcast::Sender<T> {
+impl<T: Clone + Send + 'static> Channel for broadcast::Sender<T> {
     type Tx = Self;
     type Rx = broadcast::Receiver<T>;
 
@@ -96,8 +96,8 @@ where
 
             match result {
                 Ok(t) => return Some(t),
-                Err(broadcast::RecvError::Closed) => return None,
-                Err(broadcast::RecvError::Lagged(n)) => {
+                Err(broadcast::error::RecvError::Closed) => return None,
+                Err(broadcast::error::RecvError::Lagged(n)) => {
                     // we keep the broadcast complexity localized here.
                     // instead of making things very complicated for mpsc, watch, etc receivers,
                     // we log a debug message when a lag occurs, even if logging was not requested.
@@ -151,7 +151,7 @@ where
     T: Clone + Debug + Send + Sync,
 {
     async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
-        watch::Sender::broadcast(self, value).map_err(|_| LifelineSendError::Closed)
+        watch::Sender::send(self, value).map_err(|_| LifelineSendError::Closed)
     }
 }
 
