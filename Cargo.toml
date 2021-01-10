@@ -16,6 +16,7 @@ license = "MIT"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
+postage = { git = "https://github.com/austinjones/postage-rs.git", branch = "main", optional = true }
 pin-project = "0.4.23"
 futures-util = { version = "0.3", default-features = false }
 
@@ -39,7 +40,7 @@ simple_logger = "1.9"
 tokio = { version = "1.0", features = ["sync", "time", "macros", "rt-multi-thread"] }
 
 [features]
-default = ["barrier-channel", "dyn-bus", "tokio-executor", "tokio-channels"]
+default = ["dyn-bus", "tokio-executor", "tokio-channels", "postage-channels"]
 
 dyn-bus = []
 
@@ -50,16 +51,14 @@ async-std-executor = ["async-std/default"]
 async-std-channels = ["async-std/unstable"]
 async-std-attributes = ["async-std/attributes"]
 
+postage-channels = ["postage"]
+
 subscription-channel = []
 barrier-channel = ["arc-swap", "lockfree"]
 
 [[example]]
 name = "async-std"
 required-features = ["dyn-bus", "async-std-executor", "async-std-channels"]
-
-[[example]]
-name = "subscription"
-required-features = ["tokio-channels", "subscription-channel"]
 
 [[example]]
 name = "shutdown"

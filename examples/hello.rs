@@ -1,6 +1,7 @@
 use bus::ExampleBus;
 use lifeline::prelude::*;
 use message::{ExampleRecv, ExampleSend};
+use postage::{Sink, Stream};
 use service::ExampleService;
 use simple_logger::SimpleLogger;
 
@@ -100,7 +101,7 @@ mod message {
 mod bus {
     use crate::message::{ExampleRecv, ExampleSend};
     use lifeline::prelude::*;
-    use tokio::sync::mpsc;
+    use postage::mpsc;
 
     // This is a macro that generates an ExampleBus struct,
     //   and implements DynBus for it.
@@ -128,6 +129,7 @@ mod service {
     use super::bus::ExampleBus;
     use crate::message::{ExampleRecv, ExampleSend};
     use lifeline::prelude::*;
+    use postage::{Sink, Stream};
 
     pub struct ExampleService {
         _greet: Lifeline,

@@ -1,6 +1,7 @@
 use bus::StateBus;
 use lifeline::prelude::*;
 use message::MainRecv;
+use postage::{Sink, Stream};
 use service::{MainService, StateService};
 use simple_logger::SimpleLogger;
 use state::{LocationState, SkyState, WeatherState};
@@ -147,7 +148,7 @@ mod bus {
     use crate::message::{MainRecv, TravelEvent};
     use crate::state::SkyState;
     use lifeline::prelude::*;
-    use tokio::sync::{broadcast, mpsc, watch};
+    use postage::{broadcast, mpsc, watch};
 
     lifeline_bus!(pub struct StateBus);
 
@@ -182,6 +183,7 @@ mod service {
         state::{SkyState, WeatherState},
     };
     use lifeline::prelude::*;
+    use postage::{Sink, Stream};
 
     pub struct MainService {
         _greet: Lifeline,
@@ -225,7 +227,7 @@ mod service {
 
             // if you need to get to the original channel, you can use into_inner()
             // this will make your code more fragile when you change the types in the bus, though!
-            let tx = bus.tx::<SkyState>()?.into_inner();
+            let mut tx = bus.tx::<SkyState>()?;
 
             let _travel = Self::try_task("travel", async move {
                 // default is nice!  we can initialize to the same value as the tx stores!
@@ -249,7 +251,7 @@ mod service {
                     // this is actually useful - disconnected channels propagate shutdowns.
                     // in this case, if all the receivers have disconnected,
                     //   we can stop calculating the state.
-                    tx.send(state.clone())?;
+                    tx.send(state.clone()).await?;
                 }
 
                 Ok(())
