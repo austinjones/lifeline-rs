@@ -1,7 +1,7 @@
 use super::Channel;
 use crate::error::SendError as LifelineSendError;
 use crate::{impl_channel_clone, impl_channel_take};
-use async_std::sync::{channel, Receiver, Sender};
+use async_std::channel::{bounded, Receiver, Sender};
 use async_trait::async_trait;
 use std::fmt::Debug;
 
@@ -10,7 +10,7 @@ impl<T: Send + 'static> Channel for Sender<T> {
     type Rx = Receiver<T>;
 
     fn channel(capacity: usize) -> (Self::Tx, Self::Rx) {
-        channel(capacity)
+        bounded(capacity)
     }
 
     fn default_capacity() -> usize {
@@ -27,7 +27,7 @@ where
     T: Debug + Send,
 {
     async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
-        Sender::send(self, value).await;
+        Sender::send(self, value).await.map_err(|err| LifelineSendError::Closed(err.0));
 
         Ok(())
     }
