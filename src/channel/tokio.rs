@@ -161,6 +161,9 @@ where
     T: Clone + Debug + Send + Sync,
 {
     async fn recv(&mut self) -> Option<T> {
-        watch::Receiver::recv(self).await
+        match self.changed().await {
+            Ok(_) => Some(self.borrow().clone()),
+            Err(_) => None,
+        }
     }
 }

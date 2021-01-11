@@ -63,11 +63,11 @@ mod bus {
     lifeline_bus!(pub struct ExampleBus);
 
     impl Message<ExampleBus> for ExampleSend {
-        type Channel = async_std::sync::Sender<Self>;
+        type Channel = async_std::channel::Sender<Self>;
     }
 
     impl Message<ExampleBus> for ExampleRecv {
-        type Channel = async_std::sync::Sender<Self>;
+        type Channel = async_std::channel::Sender<Self>;
     }
 }
 

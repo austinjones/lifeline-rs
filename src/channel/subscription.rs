@@ -156,7 +156,10 @@ mod channel {
 
     impl<T: Clone> Receiver<T> {
         pub async fn recv(&mut self) -> Option<SubscriptionState<T>> {
-            self.rx.recv().await
+            match self.rx.changed().await {
+                Ok(_) => Some(self.rx.borrow().clone()),
+                Err(_) => None,
+            }
         }
     }
 
@@ -230,6 +233,8 @@ mod messages {
 }
 
 mod service {
+    use tokio::sync::watch;
+
     use super::messages::{Subscription, SubscriptionState};
     use crate::Task;
     use crate::{Bus, Lifeline, Service};
@@ -248,7 +253,8 @@ mod service {
 
         fn spawn(bus: &Self::Bus) -> Self::Lifeline {
             let mut rx = bus.rx::<Subscription<T>>()?.into_inner();
-            let tx = bus.tx::<SubscriptionState<T>>()?.into_inner();
+            let tx: watch::Sender<SubscriptionState<T>> =
+                bus.tx::<SubscriptionState<T>>()?.into_inner();
             let mut next_id = 0usize;
             let lifeline = Self::try_task("run", async move {
                 let mut state = SubscriptionState::default();
@@ -260,7 +266,7 @@ mod service {
                             }
 
                             state.subscriptions.insert(id, next_id);
-                            tx.broadcast(state.clone())?;
+                            tx.send(state.clone())?;
                             next_id += 1;
                         }
                         Subscription::Unsubscribe(id) => {
@@ -269,7 +275,7 @@ mod service {
                             }
 
                             state.subscriptions.remove(&id);
-                            tx.broadcast(state.clone())?;
+                            tx.send(state.clone())?;
                         }
                     }
                 }

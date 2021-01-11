@@ -1,6 +1,6 @@
 [package]
 name = "lifeline"
-version = "0.4.0"
+version = "0.5.0"
 description = "Lifeline is a dependency injection library for asynchronous message-based applications."
 keywords = ["async", "tokio", "async", "actor", "actors"]
 categories = ["asynchronous", "rust-patterns", "web-programming"]
@@ -31,7 +31,7 @@ regex = "1.3"
 
 tokio = { version = "1.0", default-features = false, optional = true }
 tokio-stream = { version = "0.1", optional = true }
-async-std = { version = "1.6", default-features = false, optional = true }
+async-std = { version = "1.8", default-features = false, optional = true }
 
 [dev-dependencies]
 anyhow = "1.0"
