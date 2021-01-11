@@ -23,7 +23,7 @@ pub async fn main() -> anyhow::Result<()> {
     let _service = HelloService::spawn(&subsurface_bus)?;
 
     // let's pull MainSend off the main bus, to send some messages
-    let mut tx = main_bus.tx::<MainSend>()?;
+    let tx = main_bus.tx::<MainSend>()?;
 
     // if you try to pull this from MainBus, you'll get a compile error
     let mut rx = subsurface_bus.rx::<SubsurfaceSend>()?;
@@ -117,7 +117,7 @@ mod bus {
         type Lifeline = anyhow::Result<Lifeline>;
         fn carry_from(&self, from: &MainBus) -> Self::Lifeline {
             let mut rx_main = from.rx::<MainSend>()?;
-            let mut tx_sub = self.tx::<SubsurfaceRecv>()?;
+            let tx_sub = self.tx::<SubsurfaceRecv>()?;
 
             let lifeline = Self::try_task("from_main", async move {
                 while let Some(msg) = rx_main.recv().await {
@@ -163,7 +163,7 @@ mod service {
 
             // also, rx before tx!  somewhat like fn service(rx) -> tx {}
             let mut rx = bus.rx::<SubsurfaceRecv>()?;
-            let mut tx = bus.tx::<SubsurfaceSend>()?;
+            let tx = bus.tx::<SubsurfaceSend>()?;
 
             let _greet = Self::try_task("greet", async move {
                 while let Some(recv) = rx.recv().await {
