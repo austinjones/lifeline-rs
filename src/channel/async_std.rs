@@ -27,7 +27,7 @@ where
     T: Debug + Send,
 {
     async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
-        Sender::send(self, value).await.map_err(|err| LifelineSendError::Closed(err.0));
+        Sender::send(self, value).await.map_err(|err| LifelineSendError::Return(err.0))?;
 
         Ok(())
     }
