@@ -43,7 +43,7 @@ where
     }
 }
 
-impl<T: Clone + Send + Sync + 'static> Channel for broadcast::Sender<T> {
+impl<T: Send + Clone + 'static> Channel for broadcast::Sender<T> {
     type Tx = Self;
     type Rx = broadcast::Receiver<T>;
 
@@ -54,12 +54,15 @@ impl<T: Clone + Send + Sync + 'static> Channel for broadcast::Sender<T> {
     fn default_capacity() -> usize {
         16
     }
+
+    fn clone_rx(rx: &mut Option<Self::Rx>, tx: Option<&Self::Tx>) -> Option<Self::Rx> {
+        rx.take().or_else(|| tx.map(|tx| tx.subscribe()))
+    }
 }
 
 impl_channel_clone!(broadcast::Sender<T>);
 
-// this is actually overriden in clone_rx
-impl_channel_clone!(broadcast::Receiver<T>);
+impl_channel_take!(broadcast::Receiver<T>);
 
 #[async_trait]
 impl<T> crate::Sender<T> for broadcast::Sender<T>
