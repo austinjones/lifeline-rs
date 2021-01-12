@@ -62,4 +62,4 @@ required-features = ["dyn-bus", "async-std-executor", "async-std-channels"]
 
 [[example]]
 name = "shutdown"
-required-features = ["barrier-channel"]c
+required-features = ["barrier-channel"]
