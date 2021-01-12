@@ -16,7 +16,7 @@ license = "MIT"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-postage = { git = "https://github.com/austinjones/postage-rs.git", branch = "main", optional = true }
+postage = { version = "0.2", optional = true }
 pin-project = "0.4.23"
 futures-util = { version = "0.3", default-features = false }
 
@@ -62,4 +62,4 @@ required-features = ["dyn-bus", "async-std-executor", "async-std-channels"]
 
 [[example]]
 name = "shutdown"
-required-features = ["barrier-channel"]
+required-features = ["barrier-channel"]c
