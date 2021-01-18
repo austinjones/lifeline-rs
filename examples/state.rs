@@ -1,7 +1,7 @@
 use bus::StateBus;
 use lifeline::prelude::*;
 use message::MainRecv;
-use postage::{Sink, Stream};
+use postage::{sink::Sink, stream::Stream};
 use service::{MainService, StateService};
 use simple_logger::SimpleLogger;
 use state::{LocationState, SkyState, WeatherState};
@@ -183,7 +183,7 @@ mod service {
         state::{SkyState, WeatherState},
     };
     use lifeline::prelude::*;
-    use postage::{Sink, Stream};
+    use postage::{sink::Sink, stream::Stream};
 
     pub struct MainService {
         _greet: Lifeline,

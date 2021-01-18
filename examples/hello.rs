@@ -1,7 +1,7 @@
 use bus::ExampleBus;
 use lifeline::prelude::*;
 use message::{ExampleRecv, ExampleSend};
-use postage::{Sink, Stream};
+use postage::{sink::Sink, stream::Stream};
 use service::ExampleService;
 use simple_logger::SimpleLogger;
 
@@ -129,7 +129,7 @@ mod service {
     use super::bus::ExampleBus;
     use crate::message::{ExampleRecv, ExampleSend};
     use lifeline::prelude::*;
-    use postage::{Sink, Stream};
+    use postage::{sink::Sink, stream::Stream};
 
     pub struct ExampleService {
         _greet: Lifeline,

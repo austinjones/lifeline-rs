@@ -1,7 +1,7 @@
 use bus::ExampleBus;
 use lifeline::prelude::*;
 use message::*;
-use postage::{Sink, Stream};
+use postage::{sink::Sink, stream::Stream};
 use service::ExampleService;
 
 /// If a service spawns many tasks, it helps to break the run functions up.  

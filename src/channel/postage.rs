@@ -2,7 +2,9 @@ use super::Channel;
 use crate::{error::SendError as LifelineSendError, impl_storage_clone, impl_storage_take};
 use crate::{impl_channel_clone, impl_channel_take};
 use async_trait::async_trait;
-use postage::{barrier, broadcast, mpsc, oneshot, watch, Sink, Stream};
+use postage::sink::Sink;
+use postage::stream::Stream;
+use postage::{barrier, broadcast, mpsc, oneshot, watch};
 use std::fmt::Debug;
 
 impl<T: Send + 'static> Channel for mpsc::Sender<T> {
@@ -43,7 +45,7 @@ where
     }
 }
 
-impl<T: Send + Clone + 'static> Channel for broadcast::Sender<T> {
+impl<T: Send + Sync + Clone + 'static> Channel for broadcast::Sender<T> {
     type Tx = Self;
     type Rx = broadcast::Receiver<T>;
 
@@ -67,7 +69,7 @@ impl_channel_take!(broadcast::Receiver<T>);
 #[async_trait]
 impl<T> crate::Sender<T> for broadcast::Sender<T>
 where
-    T: Clone + Debug + Send,
+    T: Clone + Debug + Send + Sync,
 {
     async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
         Sink::send(self, value)
@@ -80,7 +82,7 @@ where
 #[async_trait]
 impl<T> crate::Receiver<T> for broadcast::Receiver<T>
 where
-    T: Clone + Debug + Send,
+    T: Clone + Debug + Send + Sync,
 {
     async fn recv(&mut self) -> Option<T> {
         Stream::recv(self).await

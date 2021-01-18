@@ -104,7 +104,7 @@ mod service {
     use super::bus::ExampleBus;
     use crate::message::{DomainShutdown, MainEventBarrier, MainRecv, MainShutdown};
     use lifeline::prelude::*;
-    use postage::{Sink, Stream};
+    use postage::{sink::Sink, stream::Stream};
 
     pub struct MainService {
         _greet: Lifeline,
