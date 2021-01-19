@@ -45,7 +45,7 @@ where
     }
 }
 
-impl<T: Send + Sync + Clone + 'static> Channel for broadcast::Sender<T> {
+impl<T: Clone + Send + 'static> Channel for broadcast::Sender<T> {
     type Tx = Self;
     type Rx = broadcast::Receiver<T>;
 
@@ -69,7 +69,7 @@ impl_channel_take!(broadcast::Receiver<T>);
 #[async_trait]
 impl<T> crate::Sender<T> for broadcast::Sender<T>
 where
-    T: Clone + Debug + Send + Sync,
+    T: Clone + Debug + Send,
 {
     async fn send(&mut self, value: T) -> Result<(), LifelineSendError<T>> {
         Sink::send(self, value)
@@ -82,7 +82,7 @@ where
 #[async_trait]
 impl<T> crate::Receiver<T> for broadcast::Receiver<T>
 where
-    T: Clone + Debug + Send + Sync,
+    T: Clone + Debug + Send,
 {
     async fn recv(&mut self) -> Option<T> {
         Stream::recv(self).await
