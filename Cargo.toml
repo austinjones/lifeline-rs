@@ -54,7 +54,3 @@ subscription-channel = []
 [[example]]
 name = "async-std"
 required-features = ["dyn-bus", "async-std-executor", "async-std-channels"]
-
-
-[patch.crates-io]
-postage =  { path = '../postage-rs' }
