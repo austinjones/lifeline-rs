@@ -13,8 +13,8 @@ pub async fn main() -> anyhow::Result<()> {
     let bus = ExampleBus::default();
     let _service = ExampleService::spawn(&bus)?;
 
-    let mut rx = bus.rx::<ExampleSend>()?;
-    let mut tx = bus.tx::<ExampleRecv>()?;
+    let rx = bus.rx::<ExampleSend>()?;
+    let tx = bus.tx::<ExampleRecv>()?;
 
     drop(bus);
 
@@ -22,11 +22,11 @@ pub async fn main() -> anyhow::Result<()> {
     tx.send(ExampleRecv::Goodbye).await?;
 
     let oh_hello = rx.recv().await;
-    assert_eq!(Some(ExampleSend::OhHello), oh_hello);
+    assert_eq!(Ok(ExampleSend::OhHello), oh_hello);
     println!("Service says {:?}", oh_hello.unwrap());
 
     let aww_ok = rx.recv().await;
-    assert_eq!(Some(ExampleSend::AwwOk), aww_ok);
+    assert_eq!(Ok(ExampleSend::AwwOk), aww_ok);
     println!("Service says {:?}", aww_ok.unwrap());
 
     println!("All done.");
@@ -87,11 +87,11 @@ mod service {
         type Lifeline = anyhow::Result<Self>;
 
         fn spawn(bus: &Self::Bus) -> Self::Lifeline {
-            let mut rx = bus.rx::<ExampleRecv>()?;
-            let mut tx = bus.tx::<ExampleSend>()?;
+            let rx = bus.rx::<ExampleRecv>()?;
+            let tx = bus.tx::<ExampleSend>()?;
 
             let _greet = Self::try_task("greet", async move {
-                while let Some(recv) = rx.recv().await {
+                while let Ok(recv) = rx.recv().await {
                     match recv {
                         ExampleRecv::Hello => {
                             tx.send(ExampleSend::OhHello).await?;

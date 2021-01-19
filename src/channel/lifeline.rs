@@ -1,5 +1,3 @@
-pub(crate) mod receiver;
-pub(crate) mod sender;
 use crate::error::SendError;
 use async_trait::async_trait;
 use std::fmt::Debug;

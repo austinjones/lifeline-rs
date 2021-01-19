@@ -1,18 +1,15 @@
 use crate::Storage;
 
-#[cfg(feature = "barrier-channel")]
-pub mod barrier;
-
 #[cfg(feature = "async-std-channels")]
 mod async_std;
 
 pub mod lifeline;
 
-#[cfg(all(feature = "subscription-channel", feature = "tokio-channels"))]
-pub mod subscription;
-
 #[cfg(feature = "tokio-channels")]
 mod tokio;
+
+#[cfg(feature = "postage-channels")]
+mod postage;
 
 /// A channel's (Sender, Receiver) pair.  Defines how the bus constructs and retrieves the values.
 ///

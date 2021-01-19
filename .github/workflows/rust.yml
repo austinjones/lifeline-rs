@@ -120,7 +120,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --example shutdown --features "barrier-channel"
+          args: --example shutdown
 
       - name: example | state
         uses: actions-rs/cargo@v1
@@ -128,9 +128,4 @@ jobs:
           command: run
           args: --example state
           
-      - name: example | subscription
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --example subscription --features "tokio-channels subscription-channel"
 

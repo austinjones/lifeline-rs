@@ -1,6 +1,7 @@
 use bus::ExampleBus;
 use lifeline::prelude::*;
 use message::*;
+use postage::{sink::Sink, stream::Stream};
 use service::ExampleService;
 
 /// If a service spawns many tasks, it helps to break the run functions up.  
@@ -26,7 +27,7 @@ pub async fn main() -> anyhow::Result<()> {
 mod bus {
     use crate::message::*;
     use lifeline::prelude::*;
-    use tokio::sync::broadcast;
+    use postage::broadcast;
 
     lifeline_bus!(pub struct ExampleBus);
 
@@ -55,6 +56,7 @@ mod service {
     use crate::bus::ExampleBus;
     use crate::message::*;
     use lifeline::prelude::*;
+    use lifeline::{Receiver, Sender};
 
     pub struct ExampleService {
         _greet: Lifeline,

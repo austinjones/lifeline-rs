@@ -268,28 +268,3 @@ pub trait Task {
 }
 
 impl<T> Task for T {}
-
-// #[async_trait]
-// pub trait AsyncService: Task {
-//     type Bus: Bus;
-//     type Lifeline;
-
-//     async fn spawn(bus: &Self::Bus) -> Self::Lifeline;
-// }
-
-// #[async_trait]
-// pub trait AsyncCarrier: Task {
-//     type From: Bus + Send + Sync + 'static;
-//     type Into: Bus + Send + Sync + 'static;
-//     type Lifeline;
-
-//     async fn carry(from_bus: &Self::From, to_bus: &Self::Into) -> Self::Lifeline;
-
-//     async fn carry_bus() -> (Self::From, Self::Into, Self::Lifeline) {
-//         let from = Self::From::default();
-//         let into = Self::Into::default();
-//         let lifeline = Self::carry(&from, &into).await;
-
-//         (from, into, lifeline)
-//     }
-// }

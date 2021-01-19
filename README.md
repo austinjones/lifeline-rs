@@ -17,15 +17,28 @@ For a quick introduction, see the [hello.rs example.](https://github.com/austinj
 For a full-scale application see [tab-rs.](https://github.com/austinjones/tab-rs)
 
 ## Quickstart
-Lifeline uses `tokio` as it's default runtime.  Tokio provides a rich set of async channels.
+Lifeline can be used with the [tokio](https://docs.rs/tokio/) and [async-std](https://docs.rs/async-std/) runtimes.  By default, lifeline uses `tokio`.
 ```toml
-lifeline = "0.4"
+lifeline = "0.6"
 ```
 
-Lifeline also supports the async-std runtime, and it's `mpsc` channel implementation:
+[async-std](https://docs.rs/async-std/) can be enabled with the `async-std-executor` feature.  And the `mpsc` implementation can be enabled with the `async-std-channels` feature:
 ```toml
-lifeline = { version = "0.4", features = ["dyn-bus", "async-std-executor", "async-std-channels"] }
+lifeline = { version = "0.6", default-features = false, features = ["dyn-bus", "async-std-executor", "async-std-channels"] }
 ```
+
+Lifeline also supports [postage channels](https://docs.rs/postage/), a library that provides a portable set of channel implementations (compatible with any executor).
+Postage also provides Stream and Sink combinators (similar to futures StreamExt), that are optimized for async channels.  
+Postage is intended to replace the LifelineSender/LifelineReceiver wrappers that were removed in lifeline v0.6.0.
+
+## Upgrading
+v0.6.0 contains several breaking changes:
+- The LifelineSender and LifelineReceiver wrappers were removed.  This was necessary due to the recent changes in the Stream ecosystem, and the upcoming stabilization of the Stream RFC.
+If you need Stream/Sink combinators, take a look at [postage](https://crates.io/crates/postage), or [tokio-stream](https://crates.io/crates/tokio-stream).
+- The barrier channel was removed.  It can be replaced with [postage::barrier](https://docs.rs/postage/0.3.1/postage/barrier/index.html).
+- The subscription channel was removed.  If you need it back, you can find the code before the removal [here](https://github.com/austinjones/lifeline-rs/blob/b15ab2342abcfa9c553d403cb58d2403531bf89c/src/channel/subscription.rs).
+- The Sender and Receiver traits were removed from prelude.   This is so that importing the lifeline prelude does not conflict with Sink/Stream traits.  You can import them with:
+`use lifeline::{Sender, Receiver}`.
 
 ## The Bus
 The bus carries channels and resources.  When services spawn, they receive a reference to the bus.

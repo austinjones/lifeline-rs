@@ -1,5 +1,6 @@
 use bus::ExampleBus;
 use lifeline::{assert_completes, assert_times_out, prelude::*};
+use lifeline::{Receiver, Sender};
 use message::{DomainShutdown, MainRecv, MainShutdown};
 use service::MainService;
 use simple_logger::SimpleLogger;
@@ -76,9 +77,9 @@ mod message {
 
 mod bus {
     use crate::message::{DomainShutdown, MainEventBarrier, MainRecv, MainShutdown};
-    use lifeline::barrier;
     use lifeline::prelude::*;
-    use tokio::sync::mpsc;
+    use postage::barrier;
+    use postage::mpsc;
 
     lifeline_bus!(pub struct ExampleBus);
 
@@ -95,7 +96,7 @@ mod bus {
     }
 
     impl Message<ExampleBus> for MainEventBarrier {
-        type Channel = barrier::Barrier<Self>;
+        type Channel = barrier::Sender;
     }
 }
 
@@ -103,6 +104,7 @@ mod service {
     use super::bus::ExampleBus;
     use crate::message::{DomainShutdown, MainEventBarrier, MainRecv, MainShutdown};
     use lifeline::prelude::*;
+    use postage::{sink::Sink, stream::Stream};
 
     pub struct MainService {
         _greet: Lifeline,
@@ -127,7 +129,7 @@ mod service {
 
                     // send an event barrier message
                     // this would also occur automatically if the tx_barrier value was dropped
-                    tx_barrier.send(MainEventBarrier {}).await?;
+                    tx_barrier.send(()).await?;
 
                     Ok(())
                 })
