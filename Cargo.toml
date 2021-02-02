@@ -16,7 +16,7 @@ license = "MIT"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-postage = { version = "0.3", optional = true }
+postage = { version = "0.4", optional = true }
 pin-project = "0.4.23"
 futures-util = { version = "0.3", default-features = false }
 
