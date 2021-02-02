@@ -1,6 +1,6 @@
 [package]
 name = "lifeline"
-version = "0.6.0"
+version = "0.6.1"
 description = "Lifeline is a dependency injection library for asynchronous message-based applications."
 keywords = ["async", "tokio", "async", "actor", "actors"]
 categories = ["asynchronous", "rust-patterns", "web-programming"]
@@ -16,7 +16,7 @@ license = "MIT"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-postage = { version = "0.3", optional = true }
+postage = { version = "0.4", optional = true }
 pin-project = "0.4.23"
 futures-util = { version = "0.3", default-features = false }
 
