@@ -55,7 +55,7 @@ pub trait Message<Bus>: Debug {
 ///
 /// impl Resource<ExampleBus> for MyResource {}
 /// ```
-pub trait Resource<Bus>: Storage + Debug + Send {}
+pub trait Resource<Bus>: Storage + Debug + Send + Sync {}
 
 /// Stores and distributes channel endpoints ([Senders](./trait.Sender.html) and [Receivers](./trait.Receiver.html)), as well as [Resource](./trait.Resource.html) values.
 ///
@@ -93,7 +93,8 @@ pub trait Bus: Default + Debug + Sized {
     /// }
     fn capacity<Msg>(&self, capacity: usize) -> Result<(), AlreadyLinkedError>
     where
-        Msg: Message<Self> + 'static;
+        Msg: Message<Self> + 'static,
+        Self: Sized;
 
     /// Takes (or clones) the channel [Receiver](./trait.Receiver.html).  The message type must implement [Message\<Bus\>](./trait.Message.html), which defines the channel type.
     ///
@@ -122,7 +123,8 @@ pub trait Bus: Default + Debug + Sized {
     /// ```
     fn rx<Msg>(&self) -> Result<<Msg::Channel as Channel>::Rx, TakeChannelError>
     where
-        Msg: Message<Self> + 'static;
+        Msg: Message<Self> + 'static,
+        Self: Sized;
 
     /// Takes (or clones) the channel [Sender](./trait.Sender.html).  The message type must implement [Message\<Bus\>](./trait.Message.html), which defines the channel type.
     ///
@@ -151,7 +153,8 @@ pub trait Bus: Default + Debug + Sized {
     /// ```
     fn tx<Msg>(&self) -> Result<<Msg::Channel as Channel>::Tx, TakeChannelError>
     where
-        Msg: Message<Self> + 'static;
+        Msg: Message<Self> + 'static,
+        Self: Sized;
 
     /// Takes (or clones) the [Resource](./trait.Resource.html).
     ///
@@ -176,7 +179,8 @@ pub trait Bus: Default + Debug + Sized {
     /// ```
     fn resource<Res>(&self) -> Result<Res, TakeResourceError>
     where
-        Res: Resource<Self>;
+        Res: Resource<Self>,
+        Self: Sized;
 }
 
 /// Represents the Sender, Receiver, or Both.  Used in error types.

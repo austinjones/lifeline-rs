@@ -153,7 +153,7 @@ impl<B: Bus> DynBusStorage<B> {
     }
 
     /// Stores the resource on the bus, overwriting it if it already exists
-    pub fn store_resource<Res: Send + 'static, Bus>(&self, value: Res) {
+    pub fn store_resource<Res: Send + Sync + 'static, Bus>(&self, value: Res) {
         let id = TypeId::of::<Res>();
 
         let mut state = self.state.write().unwrap();
