@@ -4,7 +4,7 @@ use std::{any::Any, fmt::Debug};
 
 pub(crate) struct BusSlot {
     name: String,
-    value: Option<Box<dyn Any + Send>>,
+    value: Option<Box<dyn Any + Send + Sync>>,
 }
 
 impl Debug for BusSlot {
@@ -19,11 +19,11 @@ impl Debug for BusSlot {
 }
 
 impl BusSlot {
-    pub fn new<T: Send + 'static>(value: Option<T>) -> Self {
+    pub fn new<T: Send + Sync + 'static>(value: Option<T>) -> Self {
         Self {
             // TODO: think about this?  uses memory, but it's nice for debugging
             name: type_name::<T>(),
-            value: value.map(|v| Box::new(v) as Box<dyn Any + Send>),
+            value: value.map(|v| Box::new(v) as Box<dyn Any + Send + Sync>),
         }
     }
 
@@ -34,7 +34,7 @@ impl BusSlot {
         }
     }
 
-    pub fn put<T: Send + 'static>(&mut self, value: T) {
+    pub fn put<T: Send + Sync + 'static>(&mut self, value: T) {
         self.value = Some(Box::new(value))
     }
 
@@ -51,36 +51,36 @@ impl BusSlot {
     pub fn clone_rx<Chan>(&mut self, tx: Option<&Chan::Tx>) -> Option<Chan::Rx>
     where
         Chan: Channel,
-        Chan::Rx: Storage + Send + 'static,
+        Chan::Rx: Storage + Send + Sync + 'static,
     {
         let mut taken = self.value.take().map(Self::cast);
         let cloned = Chan::clone_rx(&mut taken, tx);
-        self.value = taken.map(|value| Box::new(value) as Box<dyn Any + Send>);
+        self.value = taken.map(|value| Box::new(value) as Box<dyn Any + Send + Sync>);
         cloned
     }
 
     pub fn clone_tx<Chan>(&mut self) -> Option<Chan::Tx>
     where
         Chan: Channel,
-        Chan::Tx: Storage + Send + 'static,
+        Chan::Tx: Storage + Send + Sync + 'static,
     {
         let mut taken = self.value.take().map(Self::cast);
         let cloned = Chan::clone_tx(&mut taken);
-        self.value = taken.map(|value| Box::new(value) as Box<dyn Any + Send>);
+        self.value = taken.map(|value| Box::new(value) as Box<dyn Any + Send + Sync>);
         cloned
     }
 
     pub fn clone_storage<Res>(&mut self) -> Option<Res>
     where
-        Res: Storage + Send + Any,
+        Res: Storage + Send + Sync + Any,
     {
         let mut taken = self.value.take().map(Self::cast);
         let cloned = Res::take_or_clone(&mut taken);
-        self.value = taken.map(|value| Box::new(value) as Box<dyn Any + Send>);
+        self.value = taken.map(|value| Box::new(value) as Box<dyn Any + Send + Sync>);
         cloned
     }
 
-    fn cast<T: 'static>(boxed: Box<dyn Any + Send>) -> T {
+    fn cast<T: 'static>(boxed: Box<dyn Any + Send + Sync>) -> T {
         *boxed
             .downcast::<T>()
             .expect("BusSlot should always have correct type")

@@ -17,10 +17,10 @@ mod postage;
 /// `Storage` trait implementation of channel endpoints.  However, in some cases (such as tokio broadcast channels) the tx & rx endpoints are both required to implement this trait.
 pub trait Channel {
     /// The Sender half of the channel.  This is used in `Message` implementations to attach channels to a `Bus`.
-    type Tx: Storage + Send + 'static;
+    type Tx: Storage + Send + Sync + 'static;
 
     /// The Receiver half of the channel.  This is constructed when `bus.tx` or `bus.rx` is called, and is driven by the `Message` implementation for the message.
-    type Rx: Storage + Send + 'static;
+    type Rx: Storage + Send + Sync + 'static;
 
     /// Constructs a new `(Sender, Receiver)` pair.  If the channel is bounded, use the provided capacity.
     fn channel(capacity: usize) -> (Self::Tx, Self::Rx);
